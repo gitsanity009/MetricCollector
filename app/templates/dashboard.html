@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MetricCollector</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+<div class="topbar">
+    <h1>MetricCollector</h1>
+    <div class="actions">
+        <span id="user-label" style="color:var(--text-muted);font-size:0.85rem;"></span>
+        <button class="btn-logout" onclick="logout()">Logout</button>
+    </div>
+</div>
+
+<div class="container">
+    <!-- Source selector -->
+    <div class="source-bar" id="source-bar"></div>
+
+    <!-- Optional filters -->
+    <div id="filter-bar" style="margin-bottom:1.5rem;display:none;">
+        <input class="filter-input" id="filter-input" placeholder="Project key / Space key">
+        <button class="source-btn" style="margin-left:0.5rem;" onclick="fetchMetrics()">Apply</button>
+    </div>
+
+    <!-- Export buttons -->
+    <div class="export-bar" id="export-bar" style="display:none;">
+        <button class="export-btn" onclick="exportJSON()">Export JSON</button>
+        <button class="export-btn" onclick="exportCSV()">Export CSV</button>
+        <button class="export-btn" onclick="exportTableau()">Export Tableau CSV</button>
+    </div>
+
+    <!-- Loading / error -->
+    <div id="loading" style="display:none;"><div class="spinner"></div> Fetching metrics...</div>
+    <div id="error-msg"></div>
+
+    <!-- Metrics display -->
+    <div class="metrics-grid" id="metrics-grid"></div>
+    <div id="detail-tables"></div>
+</div>
+
+<script>
+const API = '/api/metrics';
+let token = localStorage.getItem('token');
+let currentSource = null;
+let currentData = null;
+
+if (!token) window.location.href = '/login';
+
+function authHeaders() { return { 'Authorization': 'Bearer ' + token }; }
+
+function logout() {
+    localStorage.removeItem('token');
+    window.location.href = '/login';
+}
+
+// ---- Init: load sources ----
+(async function init() {
+    try {
+        const res = await fetch(API + '/sources', { headers: authHeaders() });
+        if (res.status === 401) return logout();
+        const data = await res.json();
+        const bar = document.getElementById('source-bar');
+        data.sources.forEach(s => {
+            const btn = document.createElement('button');
+            btn.className = 'source-btn';
+            btn.textContent = s.label;
+            btn.dataset.id = s.id;
+            btn.addEventListener('click', () => selectSource(s.id));
+            bar.appendChild(btn);
+        });
+    } catch (e) {
+        showError('Failed to load sources: ' + e.message);
+    }
+})();
+
+function selectSource(id) {
+    currentSource = id;
+    document.querySelectorAll('.source-btn').forEach(b => b.classList.toggle('active', b.dataset.id === id));
+
+    const filterBar = document.getElementById('filter-bar');
+    const filterInput = document.getElementById('filter-input');
+    if (id === 'jira') {
+        filterBar.style.display = 'flex';
+        filterInput.placeholder = 'Jira project key (optional)';
+        filterInput.value = '';
+    } else if (id === 'confluence') {
+        filterBar.style.display = 'flex';
+        filterInput.placeholder = 'Confluence space key (optional)';
+        filterInput.value = '';
+    } else {
+        filterBar.style.display = 'none';
+        filterInput.value = '';
+    }
+
+    fetchMetrics();
+}
+
+async function fetchMetrics() {
+    const grid = document.getElementById('metrics-grid');
+    const tables = document.getElementById('detail-tables');
+    const loading = document.getElementById('loading');
+    const exportBar = document.getElementById('export-bar');
+
+    grid.innerHTML = '';
+    tables.innerHTML = '';
+    loading.style.display = 'block';
+    exportBar.style.display = 'none';
+    hideError();
+
+    let url = API + '/' + currentSource;
+    const filter = document.getElementById('filter-input').value.trim();
+    if (filter) {
+        const param = currentSource === 'jira' ? 'project' : 'space';
+        url += '?' + param + '=' + encodeURIComponent(filter);
+    }
+
+    try {
+        const res = await fetch(url, { headers: authHeaders() });
+        if (res.status === 401) return logout();
+        const data = await res.json();
+        currentData = data;
+
+        if (data.error) {
+            showError('Collector error: ' + data.error);
+        }
+
+        loading.style.display = 'none';
+        exportBar.style.display = 'flex';
+        renderMetrics(data);
+    } catch (e) {
+        loading.style.display = 'none';
+        showError('Request failed: ' + e.message);
+    }
+}
+
+function renderMetrics(data) {
+    const grid = document.getElementById('metrics-grid');
+    const tables = document.getElementById('detail-tables');
+
+    // Separate scalars from arrays/objects
+    const scalars = {};
+    const details = {};
+    for (const [k, v] of Object.entries(data)) {
+        if (k === 'source' || k === 'collected_at' || k === 'error') continue;
+        if (Array.isArray(v) && v.length && typeof v[0] === 'object') {
+            details[k] = v;
+        } else if (typeof v !== 'object') {
+            scalars[k] = v;
+        }
+    }
+
+    // Render scalar metric cards
+    for (const [k, v] of Object.entries(scalars)) {
+        const label = k.replace(/_/g, ' ');
+        grid.innerHTML += `<div class="metric-card"><div class="label">${label}</div><div class="value">${v}</div></div>`;
+    }
+
+    // Render detail tables
+    for (const [k, rows] of Object.entries(details)) {
+        const title = k.replace(/_/g, ' ');
+        const cols = Object.keys(rows[0]);
+        let html = `<div class="detail-section"><h3>${title}</h3><table class="detail-table"><thead><tr>`;
+        cols.forEach(c => html += `<th>${c.replace(/_/g, ' ')}</th>`);
+        html += '</tr></thead><tbody>';
+        rows.forEach(row => {
+            html += '<tr>';
+            cols.forEach(c => html += `<td>${row[c] ?? ''}</td>`);
+            html += '</tr>';
+        });
+        html += '</tbody></table></div>';
+        tables.innerHTML += html;
+    }
+}
+
+// ---- Export functions ----
+function exportJSON() {
+    if (!currentData) return;
+    const blob = new Blob([JSON.stringify(currentData, null, 2)], { type: 'application/json' });
+    downloadBlob(blob, currentSource + '_metrics.json');
+}
+
+async function exportCSV() {
+    const url = buildExportUrl('csv');
+    await downloadFromApi(url, currentSource + '_metrics.csv');
+}
+
+async function exportTableau() {
+    const url = buildExportUrl('tableau');
+    await downloadFromApi(url, currentSource + '_tableau.csv');
+}
+
+function buildExportUrl(type) {
+    let url = API + '/' + currentSource + '/' + type;
+    const filter = document.getElementById('filter-input').value.trim();
+    if (filter) {
+        const param = currentSource === 'jira' ? 'project' : 'space';
+        url += '?' + param + '=' + encodeURIComponent(filter);
+    }
+    return url;
+}
+
+async function downloadFromApi(url, filename) {
+    try {
+        const res = await fetch(url, { headers: authHeaders() });
+        if (res.status === 401) return logout();
+        const blob = await res.blob();
+        downloadBlob(blob, filename);
+    } catch (e) {
+        showError('Export failed: ' + e.message);
+    }
+}
+
+function downloadBlob(blob, filename) {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(a.href);
+}
+
+function showError(msg) {
+    const el = document.getElementById('error-msg');
+    el.textContent = msg;
+    el.style.display = 'block';
+}
+function hideError() {
+    document.getElementById('error-msg').style.display = 'none';
+}
+</script>
+</body>
+</html>

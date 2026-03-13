@@ -1,0 +1,118 @@
+"""VMware vCenter metrics collector using pyVmomi."""
+
+from __future__ import annotations
+
+import ssl
+from datetime import datetime, timezone
+from typing import Any
+
+from pyVim.connect import Disconnect, SmartConnect
+from pyVmomi import vim
+
+from app.config import settings
+
+
+def _connect():
+    context = None
+    if settings.vcenter_disable_ssl:
+        context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+        context.check_hostname = False
+        context.verify_mode = ssl.CERT_NONE
+
+    si = SmartConnect(
+        host=settings.vcenter_host,
+        user=settings.vcenter_user,
+        pwd=settings.vcenter_password,
+        sslContext=context,
+    )
+    return si
+
+
+def _count_objects(content, obj_type):
+    view = content.viewManager.CreateContainerView(content.rootFolder, [obj_type], True)
+    count = len(view.view)
+    view.Destroy()
+    return count
+
+
+def _get_vm_details(content) -> list[dict]:
+    view = content.viewManager.CreateContainerView(content.rootFolder, [vim.VirtualMachine], True)
+    vms = []
+    for vm in view.view:
+        summary = vm.summary
+        vms.append({
+            "name": summary.config.name,
+            "power_state": str(summary.runtime.powerState),
+            "cpu_count": summary.config.numCpu,
+            "memory_mb": summary.config.memorySizeMB,
+            "guest_os": summary.config.guestFullName or "Unknown",
+            "ip_address": summary.guest.ipAddress,
+        })
+    view.Destroy()
+    return vms
+
+
+def _get_host_details(content) -> list[dict]:
+    view = content.viewManager.CreateContainerView(content.rootFolder, [vim.HostSystem], True)
+    hosts = []
+    for host in view.view:
+        summary = host.summary
+        hardware = summary.hardware
+        hosts.append({
+            "name": summary.config.name,
+            "cpu_model": hardware.cpuModel,
+            "cpu_cores": hardware.numCpuCores,
+            "memory_gb": round(hardware.memorySize / (1024 ** 3), 1),
+            "connection_state": str(summary.runtime.connectionState),
+            "vms_running": summary.quickStats.overallCpuUsage is not None,
+        })
+    view.Destroy()
+    return hosts
+
+
+def _get_datastore_details(content) -> list[dict]:
+    view = content.viewManager.CreateContainerView(content.rootFolder, [vim.Datastore], True)
+    datastores = []
+    for ds in view.view:
+        summary = ds.summary
+        capacity_gb = round(summary.capacity / (1024 ** 3), 1) if summary.capacity else 0
+        free_gb = round(summary.freeSpace / (1024 ** 3), 1) if summary.freeSpace else 0
+        datastores.append({
+            "name": summary.name,
+            "type": summary.type,
+            "capacity_gb": capacity_gb,
+            "free_gb": free_gb,
+            "used_gb": round(capacity_gb - free_gb, 1),
+            "usage_pct": round(((capacity_gb - free_gb) / capacity_gb) * 100, 1) if capacity_gb else 0,
+        })
+    view.Destroy()
+    return datastores
+
+
+def collect() -> dict[str, Any]:
+    """Return vCenter metrics: VM/host/datastore counts and details."""
+    si = _connect()
+    content = si.RetrieveContent()
+    metrics: dict[str, Any] = {"source": "vcenter", "collected_at": datetime.now(timezone.utc).isoformat()}
+
+    try:
+        metrics["total_vms"] = _count_objects(content, vim.VirtualMachine)
+        metrics["total_hosts"] = _count_objects(content, vim.HostSystem)
+        metrics["total_datastores"] = _count_objects(content, vim.Datastore)
+        metrics["total_clusters"] = _count_objects(content, vim.ClusterComputeResource)
+        metrics["total_networks"] = _count_objects(content, vim.Network)
+
+        vms = _get_vm_details(content)
+        metrics["vms_powered_on"] = sum(1 for v in vms if v["power_state"] == "poweredOn")
+        metrics["vms_powered_off"] = sum(1 for v in vms if v["power_state"] == "poweredOff")
+        metrics["vm_details"] = vms
+
+        metrics["host_details"] = _get_host_details(content)
+        metrics["datastore_details"] = _get_datastore_details(content)
+
+    except Exception as exc:
+        metrics["error"] = str(exc)
+    finally:
+        Disconnect(si)
+
+    return metrics
