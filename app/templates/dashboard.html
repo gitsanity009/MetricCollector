@@ -20,6 +20,13 @@
     <!-- Source selector -->
     <div class="source-bar" id="source-bar"></div>
 
+    <!-- Shared credentials for AD/vCenter/Atlassian -->
+    <div id="shared-credential-bar" style="margin-bottom:1rem;display:none;gap:0.5rem;align-items:center;">
+        <input class="filter-input" id="domain-username" placeholder="Domain username (used for AD, vCenter, Jira, Confluence)">
+        <input class="filter-input" id="domain-password" type="password" placeholder="Domain password">
+        <button class="source-btn" onclick="fetchMetrics()">Use Credentials</button>
+    </div>
+
     <!-- Optional filters -->
     <div id="filter-bar" style="margin-bottom:1.5rem;display:none;">
         <input class="filter-input" id="filter-input" placeholder="Project key / Space key">
@@ -50,7 +57,16 @@ let currentData = null;
 
 if (!token) window.location.href = '/login';
 
-function authHeaders() { return { 'Authorization': 'Bearer ' + token }; }
+function authHeaders() {
+    const headers = { 'Authorization': 'Bearer ' + token };
+    if (currentSource) {
+        const domainUser = document.getElementById('domain-username').value.trim();
+        const domainPass = document.getElementById('domain-password').value;
+        if (domainUser) headers['X-Domain-Username'] = domainUser;
+        if (domainPass) headers['X-Domain-Password'] = domainPass;
+    }
+    return headers;
+}
 
 function logout() {
     localStorage.removeItem('token');
@@ -83,6 +99,10 @@ function selectSource(id) {
 
     const filterBar = document.getElementById('filter-bar');
     const filterInput = document.getElementById('filter-input');
+    const credentialBar = document.getElementById('shared-credential-bar');
+
+    credentialBar.style.display = 'flex';
+
     if (id === 'jira') {
         filterBar.style.display = 'flex';
         filterInput.placeholder = 'Jira project key (optional)';

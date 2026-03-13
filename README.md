@@ -19,14 +19,16 @@ pip install -r requirements.txt
 
 # 2. Configure credentials
 cp .env.example .env
-# Edit .env with your AD, vCenter, Jira, and Confluence credentials
-# Optional: set AD_BATTS_GROUP_CN and AD_UNIXUSERS_GROUP_CN for group-based user counts
+# Edit .env with connection details and app login credentials
+# Service credentials in `.env` are optional fallback values; admins can enter one domain credential set in the UI for AD, vCenter, Jira, and Confluence collection
 
 # 3. Run
 python run.py
 ```
 
-Open `http://localhost:8000` in your browser. Log in with the credentials set in `.env` (default: `admin` / `changeme123`).
+Open `http://localhost:8000` in your browser. Log in with the app admin account from `.env` (default: `admin` / `changeme123`).
+
+When collecting metrics, enter domain credentials once in the dashboard. The same credentials are used for **Active Directory**, **vCenter**, **Jira**, and **Confluence** requests instead of requiring service credentials in `.env`.
 
 ## API Endpoints
 

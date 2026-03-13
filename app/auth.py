@@ -1,14 +1,13 @@
 from datetime import datetime, timedelta, timezone
+from secrets import compare_digest
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
-from passlib.context import CryptContext
 from pydantic import BaseModel
 
 from app.config import settings
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
 
@@ -21,22 +20,8 @@ class TokenData(BaseModel):
     username: str
 
 
-def verify_password(plain: str, hashed: str) -> bool:
-    return pwd_context.verify(plain, hashed)
-
-
-def get_password_hash(password: str) -> str:
-    return pwd_context.hash(password)
-
-
-# Pre-hash the admin password at startup
-_admin_hash = get_password_hash(settings.admin_password)
-
-
 def authenticate_user(username: str, password: str) -> bool:
-    if username != settings.admin_username:
-        return False
-    return verify_password(password, _admin_hash)
+    return compare_digest(username, settings.admin_username) and compare_digest(password, settings.admin_password)
 
 
 def create_access_token(username: str) -> str:
