@@ -12,10 +12,22 @@ from ldap3.utils.conv import escape_filter_chars
 from app.config import settings
 
 
-def _connect() -> Connection:
+def _connect(bind_user: str | None = None, bind_password: str | None = None) -> Connection:
     server = Server(settings.ad_server, get_info=ALL)
-    conn = Connection(server, user=settings.ad_user, password=settings.ad_password, auto_bind=True)
+    user = bind_user or settings.ad_user
+    password = bind_password or settings.ad_password
+    conn = Connection(server, user=user, password=password, auto_bind=True)
     return conn
+
+
+def validate_credentials(username: str, password: str) -> bool:
+    """Validate user-provided domain credentials by attempting LDAP bind."""
+    try:
+        conn = _connect(bind_user=username, bind_password=password)
+        conn.unbind()
+        return True
+    except LDAPException:
+        return False
 
 
 def _count_users_in_group(conn: Connection, base_dn: str, group_cn: str) -> int:
@@ -40,11 +52,17 @@ def _count_users_in_group(conn: Connection, base_dn: str, group_cn: str) -> int:
     return count
 
 
-def collect() -> dict[str, Any]:
+def collect(bind_user: str | None = None, bind_password: str | None = None) -> dict[str, Any]:
     """Return AD metrics: user counts, group counts, locked/disabled accounts, recent changes."""
-    conn = _connect()
-    base = settings.ad_base_dn
     metrics: dict[str, Any] = {"source": "active_directory", "collected_at": datetime.now(timezone.utc).isoformat()}
+
+    try:
+        conn = _connect(bind_user=bind_user, bind_password=bind_password)
+    except LDAPException as exc:
+        metrics["error"] = f"AD bind failed: {exc}"
+        return metrics
+
+    base = settings.ad_base_dn
 
     try:
         # Total users

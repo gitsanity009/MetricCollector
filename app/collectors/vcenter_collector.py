@@ -12,7 +12,7 @@ from pyVmomi import vim
 from app.config import settings
 
 
-def _connect():
+def _connect(username: str | None = None, password: str | None = None):
     context = None
     if settings.vcenter_disable_ssl:
         context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
@@ -21,8 +21,8 @@ def _connect():
 
     si = SmartConnect(
         host=settings.vcenter_host,
-        user=settings.vcenter_user,
-        pwd=settings.vcenter_password,
+        user=username or settings.vcenter_user,
+        pwd=password or settings.vcenter_password,
         sslContext=context,
     )
     return si
@@ -89,11 +89,17 @@ def _get_datastore_details(content) -> list[dict]:
     return datastores
 
 
-def collect() -> dict[str, Any]:
+def collect(username: str | None = None, password: str | None = None) -> dict[str, Any]:
     """Return vCenter metrics: VM/host/datastore counts and details."""
-    si = _connect()
-    content = si.RetrieveContent()
     metrics: dict[str, Any] = {"source": "vcenter", "collected_at": datetime.now(timezone.utc).isoformat()}
+
+    try:
+        si = _connect(username=username, password=password)
+    except Exception as exc:
+        metrics["error"] = f"vCenter authentication failed: {exc}"
+        return metrics
+
+    content = si.RetrieveContent()
 
     try:
         metrics["total_vms"] = _count_objects(content, vim.VirtualMachine)
