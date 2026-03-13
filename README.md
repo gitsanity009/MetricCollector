@@ -68,3 +68,25 @@ app/
   templates/           # Jinja2 HTML templates
   static/css/          # Dashboard styles
 ```
+
+
+## Playwright / E2E Timeout Tips
+
+If browser tests are timing out in CI or containerized environments, use this startup pattern:
+
+```bash
+# Start app in non-reload mode for deterministic startup
+UVICORN_RELOAD=false UVICORN_HOST=0.0.0.0 UVICORN_PORT=8000 python run.py
+```
+
+Then have Playwright wait for a stable health endpoint before navigation:
+
+- Base URL: `http://127.0.0.1:8000`
+- Health check: `GET /health`
+- Avoid using `reload=True` during E2E runs (auto-reload can restart workers mid-test)
+
+Common timeout causes:
+
+- App container not started before tests
+- Wrong host/port (for example, `localhost` inside another container namespace)
+- No port forwarding from app container to test runner
