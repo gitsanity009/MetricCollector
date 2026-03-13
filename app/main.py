@@ -23,3 +23,8 @@ async def dashboard(request: Request):
 @app.get("/login")
 async def login_page(request: Request):
     return templates.TemplateResponse("login.html", {"request": request})
+
+
+@app.get("/health")
+async def healthcheck():
+    return {"status": "ok"}
