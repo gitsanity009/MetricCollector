@@ -6,7 +6,7 @@ Admin dashboard for pulling metrics from enterprise applications and exporting t
 
 | Source | Metrics |
 |--------|---------|
-| **Active Directory** | User/group/computer counts, locked/disabled accounts, recent account creation |
+| **Active Directory** | User/group/computer counts, locked/disabled accounts, recent account creation, BATTS/Linux user counts by AD group membership |
 | **vCenter** | VM inventory, host details, datastore capacity/usage, cluster counts |
 | **Jira** | Issue counts by status/priority, project listing, recent activity |
 | **Confluence** | Space listing, page/blog counts, recently modified content |
@@ -20,6 +20,7 @@ pip install -r requirements.txt
 # 2. Configure credentials
 cp .env.example .env
 # Edit .env with your AD, vCenter, Jira, and Confluence credentials
+# Optional: set AD_BATTS_GROUP_CN and AD_UNIXUSERS_GROUP_CN for group-based user counts
 
 # 3. Run
 python run.py

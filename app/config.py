@@ -14,6 +14,8 @@ class Settings(BaseSettings):
     ad_user: str = ""
     ad_password: str = ""
     ad_base_dn: str = ""
+    ad_batts_group_cn: str = "batts"
+    ad_unixusers_group_cn: str = "unixusers"
 
     # vCenter
     vcenter_host: str = ""
