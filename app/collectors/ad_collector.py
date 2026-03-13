@@ -5,8 +5,9 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Any
 
-from ldap3 import ALL, Connection, Server
+from ldap3 import ALL, BASE, Connection, Server
 from ldap3.core.exceptions import LDAPException
+from ldap3.utils.conv import escape_filter_chars
 
 from app.config import settings
 
@@ -15,6 +16,28 @@ def _connect() -> Connection:
     server = Server(settings.ad_server, get_info=ALL)
     conn = Connection(server, user=settings.ad_user, password=settings.ad_password, auto_bind=True)
     return conn
+
+
+def _count_users_in_group(conn: Connection, base_dn: str, group_cn: str) -> int:
+    """Count direct user members of an AD group by CN.
+
+    Returns 0 when the group does not exist or has no members.
+    """
+    group_filter = f"(&(objectClass=group)(cn={escape_filter_chars(group_cn)}))"
+    conn.search(base_dn, group_filter, attributes=["member"])
+    if not conn.entries:
+        return 0
+
+    members = conn.entries[0].member.values if "member" in conn.entries[0] else []
+    if not members:
+        return 0
+
+    count = 0
+    for member_dn in members:
+        conn.search(member_dn, "(objectClass=user)", search_scope=BASE, attributes=["distinguishedName"])
+        if conn.entries:
+            count += 1
+    return count
 
 
 def collect() -> dict[str, Any]:
@@ -56,6 +79,10 @@ def collect() -> dict[str, Any]:
         thirty_days_ago = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S.0Z")
         conn.search(base, f"(&(objectClass=user)(whenCreated>={thirty_days_ago}))")
         metrics["users_created_last_30d"] = len(conn.entries)
+
+        # Platform/group-specific user counts
+        metrics["batts_users"] = _count_users_in_group(conn, base, settings.ad_batts_group_cn)
+        metrics["linux_users"] = _count_users_in_group(conn, base, settings.ad_unixusers_group_cn)
 
     except LDAPException as exc:
         metrics["error"] = str(exc)
