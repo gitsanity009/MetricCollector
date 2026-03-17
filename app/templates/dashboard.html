@@ -11,88 +11,227 @@
 <div class="topbar">
     <h1>MetricCollector</h1>
     <div class="actions">
-        <button class="source-btn" onclick="toggleCredentials()">Credentials</button>
+        <button class="btn" id="creds-toggle-btn" onclick="toggleCredentials()">
+            Credentials <span class="cred-status-dot unconfigured" id="cred-dot"></span>
+        </button>
     </div>
 </div>
 
 <div class="container">
-    <!-- Credentials panel (hidden by default) -->
+    <!-- Credentials panel -->
     <div id="creds-panel" class="creds-panel" style="display:none;">
-        <h2 class="creds-heading">Service Credentials</h2>
-        <p class="creds-subtext">Enter credentials for the services you want to query. They are stored in your browser session only.</p>
-
-        <div class="creds-grid">
-            <!-- Active Directory -->
-            <div class="creds-section">
-                <h3>Active Directory</h3>
-                <input type="text" id="ad_server" placeholder="LDAP Server (ldap://dc.example.com)" autocomplete="off">
-                <input type="text" id="ad_user" placeholder="Bind DN (CN=user,OU=...)" autocomplete="off">
-                <input type="password" id="ad_password" placeholder="Password" autocomplete="off">
-                <input type="text" id="ad_base_dn" placeholder="Base DN (DC=example,DC=com)" autocomplete="off">
-                <input type="text" id="ad_batts_group_cn" placeholder="BATTS group CN (optional)" autocomplete="off">
-                <input type="text" id="ad_unixusers_group_cn" placeholder="Unix users group CN (optional)" autocomplete="off">
-            </div>
-
-            <!-- vCenter -->
-            <div class="creds-section">
-                <h3>vCenter</h3>
-                <input type="text" id="vcenter_host" placeholder="vCenter Host" autocomplete="off">
-                <input type="text" id="vcenter_user" placeholder="Username" autocomplete="off">
-                <input type="password" id="vcenter_password" placeholder="Password" autocomplete="off">
-                <label class="creds-checkbox">
-                    <input type="checkbox" id="vcenter_disable_ssl" checked> Disable SSL verification
-                </label>
-            </div>
-
-            <!-- Jira -->
-            <div class="creds-section">
-                <h3>Jira</h3>
-                <input type="url" id="jira_url" placeholder="Jira URL (https://org.atlassian.net)" autocomplete="off">
-                <input type="email" id="jira_user" placeholder="Email" autocomplete="off">
-                <input type="password" id="jira_password" placeholder="Password" autocomplete="off">
-            </div>
-
-            <!-- Confluence -->
-            <div class="creds-section">
-                <h3>Confluence</h3>
-                <input type="url" id="confluence_url" placeholder="Confluence URL (https://org.atlassian.net/wiki)" autocomplete="off">
-                <input type="email" id="confluence_user" placeholder="Email" autocomplete="off">
-                <input type="password" id="confluence_password" placeholder="Password" autocomplete="off">
+        <div class="creds-header">
+            <div class="creds-header-left">
+                <h2>Service Credentials</h2>
+                <p>Configure connections for each service. Stored in your browser session only.</p>
             </div>
         </div>
 
-        <button class="source-btn active" style="margin-top:1rem;" onclick="saveCredentials()">Save Credentials</button>
+        <div class="creds-body">
+            <div class="creds-grid">
+                <!-- Active Directory -->
+                <div class="creds-card open" id="card-ad">
+                    <div class="creds-card-header" onclick="toggleCard('ad')">
+                        <div class="creds-card-title">
+                            Active Directory
+                            <span class="status-badge unconfigured" id="badge-ad">Not set</span>
+                        </div>
+                        <span class="creds-card-chevron">&#9660;</span>
+                    </div>
+                    <div class="creds-card-body">
+                        <div class="field">
+                            <label class="field-label" for="ad_server">LDAP Server</label>
+                            <input class="field-input" type="text" id="ad_server" placeholder="ldap://dc.example.com" autocomplete="off">
+                        </div>
+                        <div class="field">
+                            <label class="field-label" for="ad_user">Bind DN</label>
+                            <input class="field-input" type="text" id="ad_user" placeholder="CN=svc_reader,OU=Service,DC=example,DC=com" autocomplete="off">
+                        </div>
+                        <div class="field">
+                            <label class="field-label" for="ad_password">Password</label>
+                            <div class="password-wrapper">
+                                <input class="field-input" type="password" id="ad_password" placeholder="Enter password" autocomplete="off">
+                                <button type="button" class="password-toggle" onclick="togglePassword('ad_password', this)" title="Show password">&#9673;</button>
+                            </div>
+                        </div>
+                        <div class="field">
+                            <label class="field-label" for="ad_base_dn">Base DN</label>
+                            <input class="field-input" type="text" id="ad_base_dn" placeholder="DC=example,DC=com" autocomplete="off">
+                        </div>
+                        <div class="field">
+                            <label class="field-label" for="ad_batts_group_cn">BATTS Group CN <span style="color:var(--text-dim)">(optional)</span></label>
+                            <input class="field-input" type="text" id="ad_batts_group_cn" placeholder="batts" autocomplete="off">
+                        </div>
+                        <div class="field">
+                            <label class="field-label" for="ad_unixusers_group_cn">Unix Users Group CN <span style="color:var(--text-dim)">(optional)</span></label>
+                            <input class="field-input" type="text" id="ad_unixusers_group_cn" placeholder="unixusers" autocomplete="off">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- vCenter -->
+                <div class="creds-card open" id="card-vcenter">
+                    <div class="creds-card-header" onclick="toggleCard('vcenter')">
+                        <div class="creds-card-title">
+                            vCenter
+                            <span class="status-badge unconfigured" id="badge-vcenter">Not set</span>
+                        </div>
+                        <span class="creds-card-chevron">&#9660;</span>
+                    </div>
+                    <div class="creds-card-body">
+                        <div class="field">
+                            <label class="field-label" for="vcenter_host">Host</label>
+                            <input class="field-input" type="text" id="vcenter_host" placeholder="vcenter.example.com" autocomplete="off">
+                        </div>
+                        <div class="field">
+                            <label class="field-label" for="vcenter_user">Username</label>
+                            <input class="field-input" type="text" id="vcenter_user" placeholder="administrator@vsphere.local" autocomplete="off">
+                        </div>
+                        <div class="field">
+                            <label class="field-label" for="vcenter_password">Password</label>
+                            <div class="password-wrapper">
+                                <input class="field-input" type="password" id="vcenter_password" placeholder="Enter password" autocomplete="off">
+                                <button type="button" class="password-toggle" onclick="togglePassword('vcenter_password', this)" title="Show password">&#9673;</button>
+                            </div>
+                        </div>
+                        <label class="creds-checkbox">
+                            <input type="checkbox" id="vcenter_disable_ssl" checked> Disable SSL verification
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Jira -->
+                <div class="creds-card open" id="card-jira">
+                    <div class="creds-card-header" onclick="toggleCard('jira')">
+                        <div class="creds-card-title">
+                            Jira
+                            <span class="status-badge unconfigured" id="badge-jira">Not set</span>
+                        </div>
+                        <span class="creds-card-chevron">&#9660;</span>
+                    </div>
+                    <div class="creds-card-body">
+                        <div class="field">
+                            <label class="field-label" for="jira_url">URL</label>
+                            <input class="field-input" type="url" id="jira_url" placeholder="https://your-org.atlassian.net" autocomplete="off">
+                        </div>
+                        <div class="field">
+                            <label class="field-label" for="jira_user">Email</label>
+                            <input class="field-input" type="email" id="jira_user" placeholder="you@example.com" autocomplete="off">
+                        </div>
+                        <div class="field">
+                            <label class="field-label" for="jira_password">Password</label>
+                            <div class="password-wrapper">
+                                <input class="field-input" type="password" id="jira_password" placeholder="Enter password" autocomplete="off">
+                                <button type="button" class="password-toggle" onclick="togglePassword('jira_password', this)" title="Show password">&#9673;</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Confluence -->
+                <div class="creds-card open" id="card-confluence">
+                    <div class="creds-card-header" onclick="toggleCard('confluence')">
+                        <div class="creds-card-title">
+                            Confluence
+                            <span class="status-badge unconfigured" id="badge-confluence">Not set</span>
+                        </div>
+                        <span class="creds-card-chevron">&#9660;</span>
+                    </div>
+                    <div class="creds-card-body">
+                        <div class="field">
+                            <label class="field-label" for="confluence_url">URL</label>
+                            <input class="field-input" type="url" id="confluence_url" placeholder="https://your-org.atlassian.net/wiki" autocomplete="off">
+                        </div>
+                        <div class="field">
+                            <label class="field-label" for="confluence_user">Email</label>
+                            <input class="field-input" type="email" id="confluence_user" placeholder="you@example.com" autocomplete="off">
+                        </div>
+                        <div class="field">
+                            <label class="field-label" for="confluence_password">Password</label>
+                            <div class="password-wrapper">
+                                <input class="field-input" type="password" id="confluence_password" placeholder="Enter password" autocomplete="off">
+                                <button type="button" class="password-toggle" onclick="togglePassword('confluence_password', this)" title="Show password">&#9673;</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="creds-actions">
+            <span class="creds-actions-hint">Credentials persist until you close this browser tab.</span>
+            <div style="display:flex;gap:0.5rem;">
+                <button class="btn" onclick="clearCredentials()">Clear All</button>
+                <button class="btn btn-primary" onclick="saveCredentials()">Save Credentials</button>
+            </div>
+        </div>
     </div>
 
     <!-- Source selector -->
     <div class="source-bar" id="source-bar"></div>
 
-    <!-- Optional filters -->
-    <div id="filter-bar" style="margin-bottom:1.5rem;display:none;">
+    <!-- Empty state (shown before any source is selected) -->
+    <div id="empty-state" class="empty-state">
+        <div class="empty-state-icon">&#9776;</div>
+        <h2>Select a data source</h2>
+        <p>Choose a service above to fetch and display its metrics. Make sure credentials are configured first.</p>
+    </div>
+
+    <!-- Filter bar -->
+    <div id="filter-bar" class="filter-bar" style="display:none;">
         <input class="filter-input" id="filter-input" placeholder="Project key / Space key">
-        <button class="source-btn" style="margin-left:0.5rem;" onclick="fetchMetrics()">Apply</button>
+        <button class="btn" onclick="fetchMetrics()">Apply</button>
     </div>
 
-    <!-- Export buttons -->
-    <div class="export-bar" id="export-bar" style="display:none;">
-        <button class="export-btn" onclick="exportJSON()">Export JSON</button>
-        <button class="export-btn" onclick="exportCSV()">Export CSV</button>
-        <button class="export-btn" onclick="exportTableau()">Export Tableau CSV</button>
-    </div>
+    <!-- Error banner -->
+    <div id="error-msg" style="display:none;"></div>
 
-    <!-- Loading / error -->
-    <div id="loading" style="display:none;"><div class="spinner"></div> Fetching metrics...</div>
-    <div id="error-msg"></div>
+    <!-- Loading -->
+    <div id="loading" style="display:none;"><div class="spinner"></div> Fetching metrics&hellip;</div>
+
+    <!-- Toolbar (export + timestamp) -->
+    <div id="toolbar" class="toolbar" style="display:none;">
+        <div class="export-bar">
+            <button class="btn" onclick="exportJSON()">Export JSON</button>
+            <button class="btn" onclick="exportCSV()">Export CSV</button>
+            <button class="btn" onclick="exportTableau()">Export Tableau CSV</button>
+        </div>
+        <span class="timestamp" id="timestamp"></span>
+    </div>
 
     <!-- Metrics display -->
     <div class="metrics-grid" id="metrics-grid"></div>
     <div id="detail-tables"></div>
 </div>
 
+<!-- Toast container -->
+<div class="toast-container" id="toast-container"></div>
+
 <script>
 const API = '/api/metrics';
 let currentSource = null;
 let currentData = null;
+
+// ---- Credential field definitions per service ----
+const CRED_FIELDS = {
+    ad: { required: ['ad_server', 'ad_user', 'ad_password', 'ad_base_dn'], optional: ['ad_batts_group_cn', 'ad_unixusers_group_cn'] },
+    vcenter: { required: ['vcenter_host', 'vcenter_user', 'vcenter_password'], optional: [] },
+    jira: { required: ['jira_url', 'jira_user', 'jira_password'], optional: [] },
+    confluence: { required: ['confluence_url', 'confluence_user', 'confluence_password'], optional: [] },
+};
+
+// ---- Toast notifications ----
+function showToast(message, type) {
+    const container = document.getElementById('toast-container');
+    const toast = document.createElement('div');
+    toast.className = 'toast ' + (type || '');
+    toast.innerHTML = '<span class="toast-dot"></span>' + message;
+    container.appendChild(toast);
+    setTimeout(() => {
+        toast.style.animation = 'toastOut 0.2s ease-in forwards';
+        setTimeout(() => toast.remove(), 200);
+    }, 2500);
+}
 
 // ---- Credentials helpers ----
 function getCredentials() {
@@ -101,26 +240,27 @@ function getCredentials() {
 }
 
 function saveCredentials() {
-    const creds = {
-        ad_server: document.getElementById('ad_server').value,
-        ad_user: document.getElementById('ad_user').value,
-        ad_password: document.getElementById('ad_password').value,
-        ad_base_dn: document.getElementById('ad_base_dn').value,
-        ad_batts_group_cn: document.getElementById('ad_batts_group_cn').value,
-        ad_unixusers_group_cn: document.getElementById('ad_unixusers_group_cn').value,
-        vcenter_host: document.getElementById('vcenter_host').value,
-        vcenter_user: document.getElementById('vcenter_user').value,
-        vcenter_password: document.getElementById('vcenter_password').value,
-        vcenter_disable_ssl: document.getElementById('vcenter_disable_ssl').checked,
-        jira_url: document.getElementById('jira_url').value,
-        jira_user: document.getElementById('jira_user').value,
-        jira_password: document.getElementById('jira_password').value,
-        confluence_url: document.getElementById('confluence_url').value,
-        confluence_user: document.getElementById('confluence_user').value,
-        confluence_password: document.getElementById('confluence_password').value,
-    };
+    const fields = [
+        'ad_server', 'ad_user', 'ad_password', 'ad_base_dn', 'ad_batts_group_cn', 'ad_unixusers_group_cn',
+        'vcenter_host', 'vcenter_user', 'vcenter_password',
+        'jira_url', 'jira_user', 'jira_password',
+        'confluence_url', 'confluence_user', 'confluence_password',
+    ];
+    const creds = {};
+    fields.forEach(f => { creds[f] = document.getElementById(f).value; });
+    creds.vcenter_disable_ssl = document.getElementById('vcenter_disable_ssl').checked;
     sessionStorage.setItem('credentials', JSON.stringify(creds));
+    updateAllBadges();
     document.getElementById('creds-panel').style.display = 'none';
+    showToast('Credentials saved', 'success');
+}
+
+function clearCredentials() {
+    sessionStorage.removeItem('credentials');
+    document.querySelectorAll('.creds-card-body .field-input').forEach(el => el.value = '');
+    document.getElementById('vcenter_disable_ssl').checked = true;
+    updateAllBadges();
+    showToast('All credentials cleared', '');
 }
 
 function loadCredentialsIntoForm() {
@@ -143,15 +283,58 @@ function toggleCredentials() {
     }
 }
 
+function toggleCard(service) {
+    document.getElementById('card-' + service).classList.toggle('open');
+}
+
+function togglePassword(fieldId, btn) {
+    const input = document.getElementById(fieldId);
+    if (input.type === 'password') {
+        input.type = 'text';
+        btn.textContent = '\u25C9';
+        btn.title = 'Hide password';
+    } else {
+        input.type = 'password';
+        btn.textContent = '\u25C9';
+        btn.title = 'Show password';
+    }
+}
+
+// ---- Status badges ----
+function isServiceConfigured(service) {
+    const creds = getCredentials();
+    const fields = CRED_FIELDS[service];
+    if (!fields) return false;
+    return fields.required.every(f => creds[f] && creds[f].trim() !== '');
+}
+
+function updateBadge(service) {
+    const badge = document.getElementById('badge-' + service);
+    if (!badge) return;
+    const ok = isServiceConfigured(service);
+    badge.className = 'status-badge ' + (ok ? 'configured' : 'unconfigured');
+    badge.textContent = ok ? 'Ready' : 'Not set';
+}
+
+function updateAllBadges() {
+    ['ad', 'vcenter', 'jira', 'confluence'].forEach(updateBadge);
+    // Update topbar dot
+    const anyConfigured = ['ad', 'vcenter', 'jira', 'confluence'].some(isServiceConfigured);
+    const dot = document.getElementById('cred-dot');
+    dot.className = 'cred-status-dot ' + (anyConfigured ? 'configured' : 'unconfigured');
+}
+
 // ---- Init: load sources ----
 (async function init() {
+    updateAllBadges();
+
     try {
         const res = await fetch(API + '/sources');
         const data = await res.json();
         const bar = document.getElementById('source-bar');
         data.sources.forEach(s => {
             const btn = document.createElement('button');
-            btn.className = 'source-btn';
+            btn.className = 'btn';
             btn.textContent = s.label;
             btn.dataset.id = s.id;
             btn.addEventListener('click', () => selectSource(s.id));
@@ -161,15 +344,30 @@ function toggleCredentials() {
         showError('Failed to load sources: ' + e.message);
     }
 
-    // Show credentials panel on first visit if nothing saved
+    // Show credentials panel on first visit
     if (!sessionStorage.getItem('credentials')) {
         document.getElementById('creds-panel').style.display = 'block';
     }
 })();
 
 function selectSource(id) {
+    // Check if credentials are configured for this source
+    if (!isServiceConfigured(id)) {
+        loadCredentialsIntoForm();
+        document.getElementById('creds-panel').style.display = 'block';
+        // Ensure the relevant card is open
+        ['ad', 'vcenter', 'jira', 'confluence'].forEach(s => {
+            const card = document.getElementById('card-' + s);
+            if (s === id) card.classList.add('open');
+            else card.classList.remove('open');
+        });
+        showToast('Please configure ' + SOURCES_LABELS[id] + ' credentials first', '');
+        return;
+    }
+
     currentSource = id;
-    document.querySelectorAll('.source-btn').forEach(b => b.classList.toggle('active', b.dataset.id === id));
+    document.getElementById('empty-state').style.display = 'none';
+    document.querySelectorAll('.source-bar .btn').forEach(b => b.classList.toggle('active', b.dataset.id === id));
 
     const filterBar = document.getElementById('filter-bar');
     const filterInput = document.getElementById('filter-input');
@@ -189,16 +387,19 @@ function selectSource(id) {
     fetchMetrics();
 }
 
+// Label lookup for toast messages
+const SOURCES_LABELS = { ad: 'Active Directory', vcenter: 'vCenter', jira: 'Jira', confluence: 'Confluence' };
+
 async function fetchMetrics() {
     const grid = document.getElementById('metrics-grid');
     const tables = document.getElementById('detail-tables');
     const loading = document.getElementById('loading');
-    const exportBar = document.getElementById('export-bar');
+    const toolbar = document.getElementById('toolbar');
 
     grid.innerHTML = '';
     tables.innerHTML = '';
-    loading.style.display = 'block';
-    exportBar.style.display = 'none';
+    loading.style.display = 'flex';
+    toolbar.style.display = 'none';
     hideError();
 
     let url = API + '/' + currentSource;
@@ -217,12 +418,20 @@ async function fetchMetrics() {
         const data = await res.json();
         currentData = data;
 
+        loading.style.display = 'none';
+
         if (data.error) {
             showError('Collector error: ' + data.error);
         }
 
-        loading.style.display = 'none';
-        exportBar.style.display = 'flex';
+        // Show toolbar with timestamp
+        toolbar.style.display = 'flex';
+        const ts = data.collected_at;
+        if (ts) {
+            const d = new Date(ts);
+            document.getElementById('timestamp').textContent = 'Collected ' + d.toLocaleString();
+        }
+
         renderMetrics(data);
     } catch (e) {
         loading.style.display = 'none';
@@ -247,23 +456,36 @@ function renderMetrics(data) {
 
     for (const [k, v] of Object.entries(scalars)) {
         const label = k.replace(/_/g, ' ');
-        grid.innerHTML += `<div class="metric-card"><div class="label">${label}</div><div class="value">${v}</div></div>`;
+        const card = document.createElement('div');
+        card.className = 'metric-card';
+        card.innerHTML = `<div class="label">${escapeHtml(label)}</div><div class="value">${escapeHtml(String(v))}</div>`;
+        grid.appendChild(card);
     }
 
     for (const [k, rows] of Object.entries(details)) {
         const title = k.replace(/_/g, ' ');
         const cols = Object.keys(rows[0]);
-        let html = `<div class="detail-section"><h3>${title}</h3><table class="detail-table"><thead><tr>`;
-        cols.forEach(c => html += `<th>${c.replace(/_/g, ' ')}</th>`);
+        const section = document.createElement('div');
+        section.className = 'detail-section';
+
+        let html = `<h3>${escapeHtml(title)}</h3><div class="table-wrapper"><table class="detail-table"><thead><tr>`;
+        cols.forEach(c => html += `<th>${escapeHtml(c.replace(/_/g, ' '))}</th>`);
         html += '</tr></thead><tbody>';
         rows.forEach(row => {
             html += '<tr>';
-            cols.forEach(c => html += `<td>${row[c] ?? ''}</td>`);
+            cols.forEach(c => html += `<td>${escapeHtml(String(row[c] ?? ''))}</td>`);
             html += '</tr>';
         });
         html += '</tbody></table></div>';
-        tables.innerHTML += html;
+        section.innerHTML = html;
+        tables.appendChild(section);
     }
+}
+
+function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
 }
 
 // ---- Export functions ----
@@ -274,13 +496,11 @@ function exportJSON() {
 }
 
 async function exportCSV() {
-    const url = buildExportUrl('csv');
-    await downloadFromApi(url, currentSource + '_metrics.csv');
+    await downloadFromApi(buildExportUrl('csv'), currentSource + '_metrics.csv');
 }
 
 async function exportTableau() {
-    const url = buildExportUrl('tableau');
-    await downloadFromApi(url, currentSource + '_tableau.csv');
+    await downloadFromApi(buildExportUrl('tableau'), currentSource + '_tableau.csv');
 }
 
 function buildExportUrl(type) {
@@ -315,13 +535,18 @@ function downloadBlob(blob, filename) {
     URL.revokeObjectURL(a.href);
 }
 
+// ---- Error handling ----
 function showError(msg) {
     const el = document.getElementById('error-msg');
-    el.textContent = msg;
+    el.innerHTML = '';
     el.style.display = 'block';
+    el.className = 'error-banner';
+    el.innerHTML = `<span class="error-banner-text">${escapeHtml(msg)}</span><button class="error-banner-close" onclick="hideError()" title="Dismiss">&times;</button>`;
 }
 function hideError() {
-    document.getElementById('error-msg').style.display = 'none';
+    const el = document.getElementById('error-msg');
+    el.style.display = 'none';
+    el.innerHTML = '';
 }
 </script>
 </body>
