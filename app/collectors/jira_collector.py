@@ -8,16 +8,16 @@ from typing import Any
 from jira import JIRA
 
 
-def _connect(url: str, user: str, api_token: str) -> JIRA:
+def _connect(url: str, user: str, password: str) -> JIRA:
     return JIRA(
         server=url,
-        basic_auth=(user, api_token),
+        basic_auth=(user, password),
     )
 
 
-def collect(url: str, user: str, api_token: str, project_key: str | None = None) -> dict[str, Any]:
+def collect(url: str, user: str, password: str, project_key: str | None = None) -> dict[str, Any]:
     """Return Jira metrics for all projects or a specific project."""
-    client = _connect(url, user, api_token)
+    client = _connect(url, user, password)
     metrics: dict[str, Any] = {"source": "jira", "collected_at": datetime.now(timezone.utc).isoformat()}
 
     try:

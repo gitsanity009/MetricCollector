@@ -22,6 +22,17 @@
         <p class="creds-subtext">Enter credentials for the services you want to query. They are stored in your browser session only.</p>
 
         <div class="creds-grid">
+            <!-- Active Directory -->
+            <div class="creds-section">
+                <h3>Active Directory</h3>
+                <input type="text" id="ad_server" placeholder="LDAP Server (ldap://dc.example.com)" autocomplete="off">
+                <input type="text" id="ad_user" placeholder="Bind DN (CN=user,OU=...)" autocomplete="off">
+                <input type="password" id="ad_password" placeholder="Password" autocomplete="off">
+                <input type="text" id="ad_base_dn" placeholder="Base DN (DC=example,DC=com)" autocomplete="off">
+                <input type="text" id="ad_batts_group_cn" placeholder="BATTS group CN (optional)" autocomplete="off">
+                <input type="text" id="ad_unixusers_group_cn" placeholder="Unix users group CN (optional)" autocomplete="off">
+            </div>
+
             <!-- vCenter -->
             <div class="creds-section">
                 <h3>vCenter</h3>
@@ -38,7 +49,7 @@
                 <h3>Jira</h3>
                 <input type="url" id="jira_url" placeholder="Jira URL (https://org.atlassian.net)" autocomplete="off">
                 <input type="email" id="jira_user" placeholder="Email" autocomplete="off">
-                <input type="password" id="jira_api_token" placeholder="API Token" autocomplete="off">
+                <input type="password" id="jira_password" placeholder="Password" autocomplete="off">
             </div>
 
             <!-- Confluence -->
@@ -46,7 +57,7 @@
                 <h3>Confluence</h3>
                 <input type="url" id="confluence_url" placeholder="Confluence URL (https://org.atlassian.net/wiki)" autocomplete="off">
                 <input type="email" id="confluence_user" placeholder="Email" autocomplete="off">
-                <input type="password" id="confluence_api_token" placeholder="API Token" autocomplete="off">
+                <input type="password" id="confluence_password" placeholder="Password" autocomplete="off">
             </div>
         </div>
 
@@ -91,16 +102,22 @@ function getCredentials() {
 
 function saveCredentials() {
     const creds = {
+        ad_server: document.getElementById('ad_server').value,
+        ad_user: document.getElementById('ad_user').value,
+        ad_password: document.getElementById('ad_password').value,
+        ad_base_dn: document.getElementById('ad_base_dn').value,
+        ad_batts_group_cn: document.getElementById('ad_batts_group_cn').value,
+        ad_unixusers_group_cn: document.getElementById('ad_unixusers_group_cn').value,
         vcenter_host: document.getElementById('vcenter_host').value,
         vcenter_user: document.getElementById('vcenter_user').value,
         vcenter_password: document.getElementById('vcenter_password').value,
         vcenter_disable_ssl: document.getElementById('vcenter_disable_ssl').checked,
         jira_url: document.getElementById('jira_url').value,
         jira_user: document.getElementById('jira_user').value,
-        jira_api_token: document.getElementById('jira_api_token').value,
+        jira_password: document.getElementById('jira_password').value,
         confluence_url: document.getElementById('confluence_url').value,
         confluence_user: document.getElementById('confluence_user').value,
-        confluence_api_token: document.getElementById('confluence_api_token').value,
+        confluence_password: document.getElementById('confluence_password').value,
     };
     sessionStorage.setItem('credentials', JSON.stringify(creds));
     document.getElementById('creds-panel').style.display = 'none';

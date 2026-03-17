@@ -8,18 +8,18 @@ from typing import Any
 from atlassian import Confluence
 
 
-def _connect(url: str, user: str, api_token: str) -> Confluence:
+def _connect(url: str, user: str, password: str) -> Confluence:
     return Confluence(
         url=url,
         username=user,
-        password=api_token,
+        password=password,
         cloud=True,
     )
 
 
-def collect(url: str, user: str, api_token: str, space_key: str | None = None) -> dict[str, Any]:
+def collect(url: str, user: str, password: str, space_key: str | None = None) -> dict[str, Any]:
     """Return Confluence metrics for all spaces or a specific space."""
-    client = _connect(url, user, api_token)
+    client = _connect(url, user, password)
     metrics: dict[str, Any] = {"source": "confluence", "collected_at": datetime.now(timezone.utc).isoformat()}
 
     try:

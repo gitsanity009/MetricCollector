@@ -2,7 +2,7 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    # Active Directory (still loaded from env since AD uses service account)
+    # Active Directory (can be overridden via UI)
     ad_server: str = ""
     ad_user: str = ""
     ad_password: str = ""
@@ -10,21 +10,21 @@ class Settings(BaseSettings):
     ad_batts_group_cn: str = "batts"
     ad_unixusers_group_cn: str = "unixusers"
 
-    # vCenter defaults (can be overridden via UI)
+    # vCenter (can be overridden via UI)
     vcenter_host: str = ""
     vcenter_user: str = ""
     vcenter_password: str = ""
     vcenter_disable_ssl: bool = True
 
-    # Jira defaults (can be overridden via UI)
+    # Jira (can be overridden via UI)
     jira_url: str = ""
     jira_user: str = ""
-    jira_api_token: str = ""
+    jira_password: str = ""
 
-    # Confluence defaults (can be overridden via UI)
+    # Confluence (can be overridden via UI)
     confluence_url: str = ""
     confluence_user: str = ""
-    confluence_api_token: str = ""
+    confluence_password: str = ""
 
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
 

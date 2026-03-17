@@ -23,6 +23,13 @@ SOURCES = {
 
 
 class Credentials(BaseModel):
+    # Active Directory
+    ad_server: str = ""
+    ad_user: str = ""
+    ad_password: str = ""
+    ad_base_dn: str = ""
+    ad_batts_group_cn: str = ""
+    ad_unixusers_group_cn: str = ""
     # vCenter
     vcenter_host: str = ""
     vcenter_user: str = ""
@@ -31,17 +38,24 @@ class Credentials(BaseModel):
     # Jira
     jira_url: str = ""
     jira_user: str = ""
-    jira_api_token: str = ""
+    jira_password: str = ""
     # Confluence
     confluence_url: str = ""
     confluence_user: str = ""
-    confluence_api_token: str = ""
+    confluence_password: str = ""
 
 
 def _collect(source: str, creds: Credentials, project: str | None = None, space: str | None = None) -> dict[str, Any]:
     """Dispatch to the correct collector with user-supplied credentials."""
     if source == "ad":
-        return ad_collector.collect()
+        return ad_collector.collect(
+            server_url=creds.ad_server or settings.ad_server,
+            user=creds.ad_user or settings.ad_user,
+            password=creds.ad_password or settings.ad_password,
+            base_dn=creds.ad_base_dn or settings.ad_base_dn,
+            batts_group_cn=creds.ad_batts_group_cn or settings.ad_batts_group_cn,
+            unixusers_group_cn=creds.ad_unixusers_group_cn or settings.ad_unixusers_group_cn,
+        )
     elif source == "vcenter":
         return vcenter_collector.collect(
             host=creds.vcenter_host or settings.vcenter_host,
@@ -53,14 +67,14 @@ def _collect(source: str, creds: Credentials, project: str | None = None, space:
         return jira_collector.collect(
             url=creds.jira_url or settings.jira_url,
             user=creds.jira_user or settings.jira_user,
-            api_token=creds.jira_api_token or settings.jira_api_token,
+            password=creds.jira_password or settings.jira_password,
             project_key=project,
         )
     elif source == "confluence":
         return confluence_collector.collect(
             url=creds.confluence_url or settings.confluence_url,
             user=creds.confluence_user or settings.confluence_user,
-            api_token=creds.confluence_api_token or settings.confluence_api_token,
+            password=creds.confluence_password or settings.confluence_password,
             space_key=space,
         )
     return {}
