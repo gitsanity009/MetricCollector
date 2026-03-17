@@ -174,3 +174,43 @@ body {
     width: 180px;
 }
 .filter-input:focus { outline: none; border-color: var(--accent); }
+
+/* ---- Credentials Panel ---- */
+.creds-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+}
+.creds-heading { font-size: 1.15rem; margin-bottom: 0.25rem; }
+.creds-subtext { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1.5rem; }
+.creds-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+}
+.creds-section h3 { font-size: 0.95rem; margin-bottom: 0.75rem; color: var(--accent); }
+.creds-section input[type="text"],
+.creds-section input[type="url"],
+.creds-section input[type="email"],
+.creds-section input[type="password"] {
+    width: 100%;
+    padding: 0.6rem 0.75rem;
+    margin-bottom: 0.65rem;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-size: 0.85rem;
+}
+.creds-section input:focus { outline: none; border-color: var(--accent); }
+.creds-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    cursor: pointer;
+}
+.creds-checkbox input[type="checkbox"] { accent-color: var(--accent); }

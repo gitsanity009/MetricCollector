@@ -7,19 +7,17 @@ from typing import Any
 
 from jira import JIRA
 
-from app.config import settings
 
-
-def _connect() -> JIRA:
+def _connect(url: str, user: str, password: str) -> JIRA:
     return JIRA(
-        server=settings.jira_url,
-        basic_auth=(settings.jira_user, settings.jira_api_token),
+        server=url,
+        basic_auth=(user, password),
     )
 
 
-def collect(project_key: str | None = None) -> dict[str, Any]:
+def collect(url: str, user: str, password: str, project_key: str | None = None) -> dict[str, Any]:
     """Return Jira metrics for all projects or a specific project."""
-    client = _connect()
+    client = _connect(url, user, password)
     metrics: dict[str, Any] = {"source": "jira", "collected_at": datetime.now(timezone.utc).isoformat()}
 
     try:
