@@ -7,21 +7,19 @@ from typing import Any
 
 from atlassian import Confluence
 
-from app.config import settings
 
-
-def _connect() -> Confluence:
+def _connect(url: str, user: str, api_token: str) -> Confluence:
     return Confluence(
-        url=settings.confluence_url,
-        username=settings.confluence_user,
-        password=settings.confluence_api_token,
+        url=url,
+        username=user,
+        password=api_token,
         cloud=True,
     )
 
 
-def collect(space_key: str | None = None) -> dict[str, Any]:
+def collect(url: str, user: str, api_token: str, space_key: str | None = None) -> dict[str, Any]:
     """Return Confluence metrics for all spaces or a specific space."""
-    client = _connect()
+    client = _connect(url, user, api_token)
     metrics: dict[str, Any] = {"source": "confluence", "collected_at": datetime.now(timezone.utc).isoformat()}
 
     try:

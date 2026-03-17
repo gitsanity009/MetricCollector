@@ -11,12 +11,48 @@
 <div class="topbar">
     <h1>MetricCollector</h1>
     <div class="actions">
-        <span id="user-label" style="color:var(--text-muted);font-size:0.85rem;"></span>
-        <button class="btn-logout" onclick="logout()">Logout</button>
+        <button class="source-btn" onclick="toggleCredentials()">Credentials</button>
     </div>
 </div>
 
 <div class="container">
+    <!-- Credentials panel (hidden by default) -->
+    <div id="creds-panel" class="creds-panel" style="display:none;">
+        <h2 class="creds-heading">Service Credentials</h2>
+        <p class="creds-subtext">Enter credentials for the services you want to query. They are stored in your browser session only.</p>
+
+        <div class="creds-grid">
+            <!-- vCenter -->
+            <div class="creds-section">
+                <h3>vCenter</h3>
+                <input type="text" id="vcenter_host" placeholder="vCenter Host" autocomplete="off">
+                <input type="text" id="vcenter_user" placeholder="Username" autocomplete="off">
+                <input type="password" id="vcenter_password" placeholder="Password" autocomplete="off">
+                <label class="creds-checkbox">
+                    <input type="checkbox" id="vcenter_disable_ssl" checked> Disable SSL verification
+                </label>
+            </div>
+
+            <!-- Jira -->
+            <div class="creds-section">
+                <h3>Jira</h3>
+                <input type="url" id="jira_url" placeholder="Jira URL (https://org.atlassian.net)" autocomplete="off">
+                <input type="email" id="jira_user" placeholder="Email" autocomplete="off">
+                <input type="password" id="jira_api_token" placeholder="API Token" autocomplete="off">
+            </div>
+
+            <!-- Confluence -->
+            <div class="creds-section">
+                <h3>Confluence</h3>
+                <input type="url" id="confluence_url" placeholder="Confluence URL (https://org.atlassian.net/wiki)" autocomplete="off">
+                <input type="email" id="confluence_user" placeholder="Email" autocomplete="off">
+                <input type="password" id="confluence_api_token" placeholder="API Token" autocomplete="off">
+            </div>
+        </div>
+
+        <button class="source-btn active" style="margin-top:1rem;" onclick="saveCredentials()">Save Credentials</button>
+    </div>
+
     <!-- Source selector -->
     <div class="source-bar" id="source-bar"></div>
 
@@ -44,24 +80,56 @@
 
 <script>
 const API = '/api/metrics';
-let token = localStorage.getItem('token');
 let currentSource = null;
 let currentData = null;
 
-if (!token) window.location.href = '/login';
+// ---- Credentials helpers ----
+function getCredentials() {
+    const raw = sessionStorage.getItem('credentials');
+    return raw ? JSON.parse(raw) : {};
+}
 
-function authHeaders() { return { 'Authorization': 'Bearer ' + token }; }
+function saveCredentials() {
+    const creds = {
+        vcenter_host: document.getElementById('vcenter_host').value,
+        vcenter_user: document.getElementById('vcenter_user').value,
+        vcenter_password: document.getElementById('vcenter_password').value,
+        vcenter_disable_ssl: document.getElementById('vcenter_disable_ssl').checked,
+        jira_url: document.getElementById('jira_url').value,
+        jira_user: document.getElementById('jira_user').value,
+        jira_api_token: document.getElementById('jira_api_token').value,
+        confluence_url: document.getElementById('confluence_url').value,
+        confluence_user: document.getElementById('confluence_user').value,
+        confluence_api_token: document.getElementById('confluence_api_token').value,
+    };
+    sessionStorage.setItem('credentials', JSON.stringify(creds));
+    document.getElementById('creds-panel').style.display = 'none';
+}
 
-function logout() {
-    localStorage.removeItem('token');
-    window.location.href = '/login';
+function loadCredentialsIntoForm() {
+    const creds = getCredentials();
+    for (const [key, val] of Object.entries(creds)) {
+        const el = document.getElementById(key);
+        if (!el) continue;
+        if (el.type === 'checkbox') el.checked = val;
+        else el.value = val || '';
+    }
+}
+
+function toggleCredentials() {
+    const panel = document.getElementById('creds-panel');
+    if (panel.style.display === 'none') {
+        loadCredentialsIntoForm();
+        panel.style.display = 'block';
+    } else {
+        panel.style.display = 'none';
+    }
 }
 
 // ---- Init: load sources ----
 (async function init() {
     try {
-        const res = await fetch(API + '/sources', { headers: authHeaders() });
-        if (res.status === 401) return logout();
+        const res = await fetch(API + '/sources');
         const data = await res.json();
         const bar = document.getElementById('source-bar');
         data.sources.forEach(s => {
@@ -74,6 +142,11 @@ function logout() {
         });
     } catch (e) {
         showError('Failed to load sources: ' + e.message);
+    }
+
+    // Show credentials panel on first visit if nothing saved
+    if (!sessionStorage.getItem('credentials')) {
+        document.getElementById('creds-panel').style.display = 'block';
     }
 })();
 
@@ -119,8 +192,11 @@ async function fetchMetrics() {
     }
 
     try {
-        const res = await fetch(url, { headers: authHeaders() });
-        if (res.status === 401) return logout();
+        const res = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(getCredentials()),
+        });
         const data = await res.json();
         currentData = data;
 
@@ -141,7 +217,6 @@ function renderMetrics(data) {
     const grid = document.getElementById('metrics-grid');
     const tables = document.getElementById('detail-tables');
 
-    // Separate scalars from arrays/objects
     const scalars = {};
     const details = {};
     for (const [k, v] of Object.entries(data)) {
@@ -153,13 +228,11 @@ function renderMetrics(data) {
         }
     }
 
-    // Render scalar metric cards
     for (const [k, v] of Object.entries(scalars)) {
         const label = k.replace(/_/g, ' ');
         grid.innerHTML += `<div class="metric-card"><div class="label">${label}</div><div class="value">${v}</div></div>`;
     }
 
-    // Render detail tables
     for (const [k, rows] of Object.entries(details)) {
         const title = k.replace(/_/g, ' ');
         const cols = Object.keys(rows[0]);
@@ -205,8 +278,11 @@ function buildExportUrl(type) {
 
 async function downloadFromApi(url, filename) {
     try {
-        const res = await fetch(url, { headers: authHeaders() });
-        if (res.status === 401) return logout();
+        const res = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(getCredentials()),
+        });
         const blob = await res.blob();
         downloadBlob(blob, filename);
     } catch (e) {

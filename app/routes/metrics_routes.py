@@ -6,19 +6,64 @@ import csv
 import io
 from typing import Any
 
-from fastapi import APIRouter, Depends, Query, Response
+from fastapi import APIRouter, Query, Response
+from pydantic import BaseModel
 
-from app.auth import get_current_user
 from app.collectors import ad_collector, vcenter_collector, jira_collector, confluence_collector
+from app.config import settings
 
 router = APIRouter(prefix="/api/metrics", tags=["metrics"])
 
-COLLECTORS = {
-    "ad": {"fn": lambda **_: ad_collector.collect(), "label": "Active Directory"},
-    "vcenter": {"fn": lambda **_: vcenter_collector.collect(), "label": "vCenter"},
-    "jira": {"fn": lambda **kw: jira_collector.collect(project_key=kw.get("project")), "label": "Jira"},
-    "confluence": {"fn": lambda **kw: confluence_collector.collect(space_key=kw.get("space")), "label": "Confluence"},
+SOURCES = {
+    "ad": "Active Directory",
+    "vcenter": "vCenter",
+    "jira": "Jira",
+    "confluence": "Confluence",
 }
+
+
+class Credentials(BaseModel):
+    # vCenter
+    vcenter_host: str = ""
+    vcenter_user: str = ""
+    vcenter_password: str = ""
+    vcenter_disable_ssl: bool = True
+    # Jira
+    jira_url: str = ""
+    jira_user: str = ""
+    jira_api_token: str = ""
+    # Confluence
+    confluence_url: str = ""
+    confluence_user: str = ""
+    confluence_api_token: str = ""
+
+
+def _collect(source: str, creds: Credentials, project: str | None = None, space: str | None = None) -> dict[str, Any]:
+    """Dispatch to the correct collector with user-supplied credentials."""
+    if source == "ad":
+        return ad_collector.collect()
+    elif source == "vcenter":
+        return vcenter_collector.collect(
+            host=creds.vcenter_host or settings.vcenter_host,
+            user=creds.vcenter_user or settings.vcenter_user,
+            password=creds.vcenter_password or settings.vcenter_password,
+            disable_ssl=creds.vcenter_disable_ssl,
+        )
+    elif source == "jira":
+        return jira_collector.collect(
+            url=creds.jira_url or settings.jira_url,
+            user=creds.jira_user or settings.jira_user,
+            api_token=creds.jira_api_token or settings.jira_api_token,
+            project_key=project,
+        )
+    elif source == "confluence":
+        return confluence_collector.collect(
+            url=creds.confluence_url or settings.confluence_url,
+            user=creds.confluence_user or settings.confluence_user,
+            api_token=creds.confluence_api_token or settings.confluence_api_token,
+            space_key=space,
+        )
+    return {}
 
 
 def _flatten(data: dict, parent_key: str = "", sep: str = ".") -> dict[str, Any]:
@@ -29,7 +74,6 @@ def _flatten(data: dict, parent_key: str = "", sep: str = ".") -> dict[str, Any]
         if isinstance(v, dict):
             items.extend(_flatten(v, new_key, sep).items())
         elif isinstance(v, list):
-            # For list of dicts, create indexed rows; for simple lists join as string
             if v and isinstance(v[0], dict):
                 for i, item in enumerate(v):
                     items.extend(_flatten(item, f"{new_key}[{i}]", sep).items())
@@ -43,36 +87,36 @@ def _flatten(data: dict, parent_key: str = "", sep: str = ".") -> dict[str, Any]
 # ---- JSON endpoints ----
 
 @router.get("/sources")
-async def list_sources(_user: str = Depends(get_current_user)):
-    return {"sources": [{"id": k, "label": v["label"]} for k, v in COLLECTORS.items()]}
+async def list_sources():
+    return {"sources": [{"id": k, "label": v} for k, v in SOURCES.items()]}
 
 
-@router.get("/{source}")
+@router.post("/{source}")
 async def get_metrics(
     source: str,
+    creds: Credentials,
     project: str | None = Query(None, description="Jira project key"),
     space: str | None = Query(None, description="Confluence space key"),
-    _user: str = Depends(get_current_user),
 ):
-    if source not in COLLECTORS:
+    if source not in SOURCES:
         return Response(status_code=404, content=f"Unknown source: {source}")
-    data = COLLECTORS[source]["fn"](project=project, space=space)
+    data = _collect(source, creds, project=project, space=space)
     return data
 
 
 # ---- CSV export ----
 
-@router.get("/{source}/csv")
+@router.post("/{source}/csv")
 async def export_csv(
     source: str,
+    creds: Credentials,
     project: str | None = Query(None),
     space: str | None = Query(None),
-    _user: str = Depends(get_current_user),
 ):
-    if source not in COLLECTORS:
+    if source not in SOURCES:
         return Response(status_code=404, content=f"Unknown source: {source}")
 
-    data = COLLECTORS[source]["fn"](project=project, space=space)
+    data = _collect(source, creds, project=project, space=space)
     flat = _flatten(data)
 
     buf = io.StringIO()
@@ -90,30 +134,24 @@ async def export_csv(
 
 # ---- Tableau-friendly export (flat detail rows) ----
 
-@router.get("/{source}/tableau")
+@router.post("/{source}/tableau")
 async def export_tableau(
     source: str,
+    creds: Credentials,
     project: str | None = Query(None),
     space: str | None = Query(None),
-    _user: str = Depends(get_current_user),
 ):
-    """Export detail-level rows as CSV, ideal for Tableau import.
-
-    For sources with detail arrays (e.g. vm_details, host_details, space_details),
-    each item becomes its own row with the summary metrics repeated.
-    """
-    if source not in COLLECTORS:
+    """Export detail-level rows as CSV, ideal for Tableau import."""
+    if source not in SOURCES:
         return Response(status_code=404, content=f"Unknown source: {source}")
 
-    data = COLLECTORS[source]["fn"](project=project, space=space)
+    data = _collect(source, creds, project=project, space=space)
 
-    # Find detail arrays and summary scalars
     detail_keys = [k for k, v in data.items() if isinstance(v, list) and v and isinstance(v[0], dict)]
     summary = {k: v for k, v in data.items() if not isinstance(v, (list, dict))}
 
     rows: list[dict] = []
     if detail_keys:
-        # Use the first detail array as the primary row source
         primary = detail_keys[0]
         for item in data[primary]:
             row = {**summary, "detail_type": primary}
