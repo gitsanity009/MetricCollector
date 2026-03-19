@@ -6,6 +6,7 @@ import csv
 import io
 from typing import Any
 
+<<<<<<< HEAD
 from fastapi import APIRouter, Query, Response
 from pydantic import BaseModel
 
@@ -19,6 +20,40 @@ SOURCES = {
     "vcenter": "vCenter",
     "jira": "Jira",
     "confluence": "Confluence",
+=======
+from fastapi import APIRouter, Depends, Header, Query, Response
+
+from app.auth import get_current_user
+from app.collectors import ad_collector, confluence_collector, jira_collector, vcenter_collector
+
+router = APIRouter(prefix="/api/metrics", tags=["metrics"])
+
+COLLECTORS = {
+    "ad": {
+        "fn": lambda **kw: ad_collector.collect(bind_user=kw.get("username"), bind_password=kw.get("password")),
+        "label": "Active Directory",
+    },
+    "vcenter": {
+        "fn": lambda **kw: vcenter_collector.collect(username=kw.get("username"), password=kw.get("password")),
+        "label": "vCenter",
+    },
+    "jira": {
+        "fn": lambda **kw: jira_collector.collect(
+            project_key=kw.get("project"),
+            username=kw.get("username"),
+            password=kw.get("password"),
+        ),
+        "label": "Jira",
+    },
+    "confluence": {
+        "fn": lambda **kw: confluence_collector.collect(
+            space_key=kw.get("space"),
+            username=kw.get("username"),
+            password=kw.get("password"),
+        ),
+        "label": "Confluence",
+    },
+>>>>>>> main
 }
 
 
@@ -98,8 +133,6 @@ def _flatten(data: dict, parent_key: str = "", sep: str = ".") -> dict[str, Any]
     return dict(items)
 
 
-# ---- JSON endpoints ----
-
 @router.get("/sources")
 async def list_sources():
     return {"sources": [{"id": k, "label": v} for k, v in SOURCES.items()]}
@@ -111,9 +144,16 @@ async def get_metrics(
     creds: Credentials,
     project: str | None = Query(None, description="Jira project key"),
     space: str | None = Query(None, description="Confluence space key"),
+<<<<<<< HEAD
+=======
+    x_domain_username: str | None = Header(default=None),
+    x_domain_password: str | None = Header(default=None),
+    _user: str = Depends(get_current_user),
+>>>>>>> main
 ):
     if source not in SOURCES:
         return Response(status_code=404, content=f"Unknown source: {source}")
+<<<<<<< HEAD
     data = _collect(source, creds, project=project, space=space)
     return data
 
@@ -121,45 +161,91 @@ async def get_metrics(
 # ---- CSV export ----
 
 @router.post("/{source}/csv")
+=======
+    return COLLECTORS[source]["fn"](
+        project=project,
+        space=space,
+        username=x_domain_username,
+        password=x_domain_password,
+    )
+
+
+@router.get("/{source}/csv")
+>>>>>>> main
 async def export_csv(
     source: str,
     creds: Credentials,
     project: str | None = Query(None),
     space: str | None = Query(None),
+<<<<<<< HEAD
+=======
+    x_domain_username: str | None = Header(default=None),
+    x_domain_password: str | None = Header(default=None),
+    _user: str = Depends(get_current_user),
+>>>>>>> main
 ):
     if source not in SOURCES:
         return Response(status_code=404, content=f"Unknown source: {source}")
 
+<<<<<<< HEAD
     data = _collect(source, creds, project=project, space=space)
+=======
+    data = COLLECTORS[source]["fn"](
+        project=project,
+        space=space,
+        username=x_domain_username,
+        password=x_domain_password,
+    )
+>>>>>>> main
     flat = _flatten(data)
 
     buf = io.StringIO()
     writer = csv.DictWriter(buf, fieldnames=flat.keys())
     writer.writeheader()
     writer.writerow(flat)
-    csv_content = buf.getvalue()
 
     return Response(
-        content=csv_content,
+        content=buf.getvalue(),
         media_type="text/csv",
         headers={"Content-Disposition": f"attachment; filename={source}_metrics.csv"},
     )
 
 
+<<<<<<< HEAD
 # ---- Tableau-friendly export (flat detail rows) ----
 
 @router.post("/{source}/tableau")
+=======
+@router.get("/{source}/tableau")
+>>>>>>> main
 async def export_tableau(
     source: str,
     creds: Credentials,
     project: str | None = Query(None),
     space: str | None = Query(None),
+<<<<<<< HEAD
 ):
     """Export detail-level rows as CSV, ideal for Tableau import."""
     if source not in SOURCES:
         return Response(status_code=404, content=f"Unknown source: {source}")
 
     data = _collect(source, creds, project=project, space=space)
+=======
+    x_domain_username: str | None = Header(default=None),
+    x_domain_password: str | None = Header(default=None),
+    _user: str = Depends(get_current_user),
+):
+    """Export detail-level rows as CSV, ideal for Tableau import."""
+    if source not in COLLECTORS:
+        return Response(status_code=404, content=f"Unknown source: {source}")
+
+    data = COLLECTORS[source]["fn"](
+        project=project,
+        space=space,
+        username=x_domain_username,
+        password=x_domain_password,
+    )
+>>>>>>> main
 
     detail_keys = [k for k, v in data.items() if isinstance(v, list) and v and isinstance(v[0], dict)]
     summary = {k: v for k, v in data.items() if not isinstance(v, (list, dict))}
@@ -178,8 +264,7 @@ async def export_tableau(
         return Response(content="No data", status_code=204)
 
     buf = io.StringIO()
-    fieldnames = list(rows[0].keys())
-    writer = csv.DictWriter(buf, fieldnames=fieldnames, extrasaction="ignore")
+    writer = csv.DictWriter(buf, fieldnames=list(rows[0].keys()), extrasaction="ignore")
     writer.writeheader()
     writer.writerows(rows)
 

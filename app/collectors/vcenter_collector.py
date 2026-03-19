@@ -10,7 +10,12 @@ from pyVim.connect import Disconnect, SmartConnect
 from pyVmomi import vim
 
 
+<<<<<<< HEAD
 def _connect(host: str, user: str, password: str, disable_ssl: bool = True):
+=======
+
+def _connect(username: str | None = None, password: str | None = None):
+>>>>>>> main
     context = None
     if disable_ssl:
         context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
@@ -18,9 +23,15 @@ def _connect(host: str, user: str, password: str, disable_ssl: bool = True):
         context.verify_mode = ssl.CERT_NONE
 
     si = SmartConnect(
+<<<<<<< HEAD
         host=host,
         user=user,
         pwd=password,
+=======
+        host=settings.vcenter_host,
+        user=username or settings.vcenter_user,
+        pwd=password or settings.vcenter_password,
+>>>>>>> main
         sslContext=context,
     )
     return si
@@ -87,11 +98,24 @@ def _get_datastore_details(content) -> list[dict]:
     return datastores
 
 
+<<<<<<< HEAD
 def collect(host: str, user: str, password: str, disable_ssl: bool = True) -> dict[str, Any]:
     """Return vCenter metrics: VM/host/datastore counts and details."""
     si = _connect(host, user, password, disable_ssl)
     content = si.RetrieveContent()
+=======
+def collect(username: str | None = None, password: str | None = None) -> dict[str, Any]:
+    """Return vCenter metrics: VM/host/datastore counts and details."""
+>>>>>>> main
     metrics: dict[str, Any] = {"source": "vcenter", "collected_at": datetime.now(timezone.utc).isoformat()}
+
+    try:
+        si = _connect(username=username, password=password)
+    except Exception as exc:
+        metrics["error"] = f"vCenter authentication failed: {exc}"
+        return metrics
+
+    content = si.RetrieveContent()
 
     try:
         metrics["total_vms"] = _count_objects(content, vim.VirtualMachine)

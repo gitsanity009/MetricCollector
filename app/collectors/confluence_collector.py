@@ -8,28 +8,46 @@ from typing import Any
 from atlassian import Confluence
 
 
+<<<<<<< HEAD
 def _connect(url: str, user: str, password: str) -> Confluence:
     return Confluence(
         url=url,
         username=user,
         password=password,
+=======
+
+def _connect(username: str | None = None, password: str | None = None) -> Confluence:
+    return Confluence(
+        url=settings.confluence_url,
+        username=username or settings.confluence_user,
+        password=password or settings.confluence_api_token,
+>>>>>>> main
         cloud=True,
     )
 
 
+<<<<<<< HEAD
 def collect(url: str, user: str, password: str, space_key: str | None = None) -> dict[str, Any]:
     """Return Confluence metrics for all spaces or a specific space."""
     client = _connect(url, user, password)
+=======
+def collect(space_key: str | None = None, username: str | None = None, password: str | None = None) -> dict[str, Any]:
+    """Return Confluence metrics for all spaces or a specific space."""
+>>>>>>> main
     metrics: dict[str, Any] = {"source": "confluence", "collected_at": datetime.now(timezone.utc).isoformat()}
 
     try:
-        # Spaces
+        client = _connect(username=username, password=password)
+    except Exception as exc:
+        metrics["error"] = f"Confluence authentication failed: {exc}"
+        return metrics
+
+    try:
         spaces = client.get_all_spaces(start=0, limit=500, expand="description.plain")
         space_list = spaces.get("results", [])
         metrics["total_spaces"] = len(space_list)
         metrics["spaces"] = [{"key": s["key"], "name": s["name"], "type": s["type"]} for s in space_list]
 
-        # Per-space page counts
         space_metrics = []
         target_spaces = [s for s in space_list if s["key"] == space_key] if space_key else space_list
         for space in target_spaces:
@@ -41,19 +59,19 @@ def collect(url: str, user: str, password: str, space_key: str | None = None) ->
             blog_result = client.cql(cql_blog, limit=0)
             blog_count = blog_result.get("totalSize", 0)
 
-            space_metrics.append({
-                "space_key": space["key"],
-                "space_name": space["name"],
-                "pages": page_count,
-                "blog_posts": blog_count,
-            })
+            space_metrics.append(
+                {
+                    "space_key": space["key"],
+                    "space_name": space["name"],
+                    "pages": page_count,
+                    "blog_posts": blog_count,
+                }
+            )
         metrics["space_details"] = space_metrics
 
-        # Total pages across all targeted spaces
         metrics["total_pages"] = sum(s["pages"] for s in space_metrics)
         metrics["total_blog_posts"] = sum(s["blog_posts"] for s in space_metrics)
 
-        # Recently updated content (last 30 days)
         cql_recent = 'lastModified >= now("-30d")'
         if space_key:
             cql_recent = f'space = "{space_key}" AND {cql_recent}'
