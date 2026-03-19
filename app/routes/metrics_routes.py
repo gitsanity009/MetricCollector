@@ -21,6 +21,13 @@ SOURCES = {
     "confluence": "Confluence",
 }
 
+REQUIRED_FIELDS_BY_SOURCE = {
+    "ad": ("ad_server", "ad_user", "ad_password", "ad_base_dn"),
+    "vcenter": ("vcenter_host", "vcenter_user", "vcenter_password"),
+    "jira": ("jira_url", "jira_user", "jira_password"),
+    "confluence": ("confluence_url", "confluence_user", "confluence_password"),
+}
+
 
 class Credentials(BaseModel):
     # Active Directory
@@ -80,6 +87,12 @@ def _collect(source: str, creds: Credentials, project: str | None = None, space:
     return {}
 
 
+def _source_has_server_defaults(source: str) -> bool:
+    """Return whether all required credentials for a source are configured on the server."""
+    fields = REQUIRED_FIELDS_BY_SOURCE.get(source, ())
+    return all(str(getattr(settings, field, "")).strip() for field in fields)
+
+
 def _flatten(data: dict, parent_key: str = "", sep: str = ".") -> dict[str, Any]:
     """Flatten nested dicts/lists into dot-separated keys for CSV export."""
     items: list[tuple[str, Any]] = []
@@ -102,7 +115,16 @@ def _flatten(data: dict, parent_key: str = "", sep: str = ".") -> dict[str, Any]
 
 @router.get("/sources")
 async def list_sources():
-    return {"sources": [{"id": k, "label": v} for k, v in SOURCES.items()]}
+    return {
+        "sources": [
+            {
+                "id": key,
+                "label": label,
+                "has_server_defaults": _source_has_server_defaults(key),
+            }
+            for key, label in SOURCES.items()
+        ]
+    }
 
 
 @router.post("/{source}")
