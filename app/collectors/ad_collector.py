@@ -9,13 +9,17 @@ from ldap3 import ALL, BASE, Connection, Server
 from ldap3.core.exceptions import LDAPException
 from ldap3.utils.conv import escape_filter_chars
 
-from app.config import settings
 
+<<<<<<< HEAD
+def _connect(server_url: str, user: str, password: str) -> Connection:
+    server = Server(server_url, get_info=ALL)
+=======
 
 def _connect(bind_user: str | None = None, bind_password: str | None = None) -> Connection:
     server = Server(settings.ad_server, get_info=ALL)
     user = bind_user or settings.ad_user
     password = bind_password or settings.ad_password
+>>>>>>> main
     conn = Connection(server, user=user, password=password, auto_bind=True)
     return conn
 
@@ -52,8 +56,22 @@ def _count_users_in_group(conn: Connection, base_dn: str, group_cn: str) -> int:
     return count
 
 
+<<<<<<< HEAD
+def collect(
+    server_url: str,
+    user: str,
+    password: str,
+    base_dn: str,
+    batts_group_cn: str = "batts",
+    unixusers_group_cn: str = "unixusers",
+) -> dict[str, Any]:
+    """Return AD metrics: user counts, group counts, locked/disabled accounts, recent changes."""
+    conn = _connect(server_url, user, password)
+    base = base_dn
+=======
 def collect(bind_user: str | None = None, bind_password: str | None = None) -> dict[str, Any]:
     """Return AD metrics: user counts, group counts, locked/disabled accounts, recent changes."""
+>>>>>>> main
     metrics: dict[str, Any] = {"source": "active_directory", "collected_at": datetime.now(timezone.utc).isoformat()}
 
     try:
@@ -99,8 +117,8 @@ def collect(bind_user: str | None = None, bind_password: str | None = None) -> d
         metrics["users_created_last_30d"] = len(conn.entries)
 
         # Platform/group-specific user counts
-        metrics["batts_users"] = _count_users_in_group(conn, base, settings.ad_batts_group_cn)
-        metrics["linux_users"] = _count_users_in_group(conn, base, settings.ad_unixusers_group_cn)
+        metrics["batts_users"] = _count_users_in_group(conn, base, batts_group_cn)
+        metrics["linux_users"] = _count_users_in_group(conn, base, unixusers_group_cn)
 
     except LDAPException as exc:
         metrics["error"] = str(exc)

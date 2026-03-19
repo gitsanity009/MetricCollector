@@ -20,48 +20,6 @@ body {
     min-height: 100vh;
 }
 
-/* ---- Login ---- */
-.login-wrapper {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 100vh;
-}
-.login-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 2.5rem;
-    width: 100%;
-    max-width: 400px;
-}
-.login-card h1 { font-size: 1.5rem; margin-bottom: 1.5rem; text-align: center; }
-.login-card input {
-    width: 100%;
-    padding: 0.75rem 1rem;
-    margin-bottom: 1rem;
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    color: var(--text);
-    font-size: 0.95rem;
-}
-.login-card input:focus { outline: none; border-color: var(--accent); }
-.login-card button {
-    width: 100%;
-    padding: 0.75rem;
-    background: var(--accent);
-    border: none;
-    border-radius: 8px;
-    color: #fff;
-    font-size: 1rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background 0.2s;
-}
-.login-card button:hover { background: var(--accent-hover); }
-.login-error { color: var(--danger); font-size: 0.85rem; margin-bottom: 1rem; display: none; }
-
 /* ---- Dashboard ---- */
 .topbar {
     display: flex;
@@ -70,9 +28,24 @@ body {
     padding: 1rem 2rem;
     background: var(--surface);
     border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 100;
 }
 .topbar h1 { font-size: 1.25rem; }
 .topbar .actions { display: flex; gap: 0.75rem; align-items: center; }
+
+/* Credentials dot indicator on topbar button */
+.creds-topbar-btn { position: relative; }
+.creds-dot {
+    width: 8px;
+    height: 8px;
+    background: var(--warning);
+    border-radius: 50%;
+    position: absolute;
+    top: 4px;
+    right: 4px;
+}
 
 .container { padding: 2rem; max-width: 1400px; margin: 0 auto; }
 
@@ -108,6 +81,11 @@ body {
     border: 1px solid var(--border);
     border-radius: 10px;
     padding: 1.25rem;
+    transition: transform 0.15s, border-color 0.15s;
+}
+.metric-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--accent);
 }
 .metric-card .label { font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
 .metric-card .value { font-size: 1.75rem; font-weight: 700; margin-top: 0.25rem; }
@@ -115,10 +93,16 @@ body {
 /* Detail table */
 .detail-section { margin-bottom: 2rem; }
 .detail-section h3 { margin-bottom: 0.75rem; font-size: 1rem; color: var(--text-muted); }
-.detail-table { width: 100%; border-collapse: collapse; background: var(--surface); border-radius: 10px; overflow: hidden; }
+.table-scroll-wrapper {
+    overflow-x: auto;
+    border-radius: 10px;
+    -webkit-overflow-scrolling: touch;
+}
+.detail-table { width: 100%; border-collapse: collapse; background: var(--surface); border-radius: 10px; overflow: hidden; min-width: 500px; }
 .detail-table th, .detail-table td { padding: 0.75rem 1rem; text-align: left; border-bottom: 1px solid var(--border); font-size: 0.85rem; }
 .detail-table th { background: var(--bg); color: var(--text-muted); font-weight: 600; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.05em; }
 .detail-table tr:last-child td { border-bottom: none; }
+.detail-table tbody tr:hover { background: rgba(59, 130, 246, 0.08); }
 
 /* Export buttons */
 .export-bar { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; }
@@ -133,17 +117,6 @@ body {
     transition: all 0.2s;
 }
 .export-btn:hover { border-color: var(--accent); color: var(--accent); }
-
-.btn-logout {
-    padding: 0.5rem 1rem;
-    background: transparent;
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    color: var(--text-muted);
-    cursor: pointer;
-    font-size: 0.85rem;
-}
-.btn-logout:hover { border-color: var(--danger); color: var(--danger); }
 
 /* Status indicators */
 .status-connected { color: var(--success); }
@@ -161,7 +134,39 @@ body {
 @keyframes spin { to { transform: rotate(360deg); } }
 
 #loading { text-align: center; padding: 4rem; color: var(--text-muted); }
-#error-msg { color: var(--danger); padding: 1rem; display: none; }
+
+/* Error banner with close button */
+.error-banner {
+    color: var(--danger);
+    padding: 0.75rem 1rem;
+    display: none;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 8px;
+    margin-bottom: 1rem;
+}
+.error-close {
+    background: none;
+    border: none;
+    color: var(--danger);
+    font-size: 1.25rem;
+    cursor: pointer;
+    padding: 0 0.25rem;
+    line-height: 1;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+}
+.error-close:hover { opacity: 1; }
+
+/* Collected timestamp */
+.collected-timestamp {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-bottom: 1rem;
+    padding: 0.25rem 0;
+}
 
 /* Input fields in dashboard */
 .filter-input {
@@ -174,3 +179,282 @@ body {
     width: 180px;
 }
 .filter-input:focus { outline: none; border-color: var(--accent); }
+
+/* ---- Empty state ---- */
+.empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: var(--text-muted);
+}
+.empty-state-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+}
+.empty-state h2 {
+    font-size: 1.25rem;
+    color: var(--text);
+    margin-bottom: 0.5rem;
+}
+.empty-state p {
+    font-size: 0.9rem;
+    max-width: 400px;
+    margin: 0 auto;
+    line-height: 1.5;
+}
+
+/* ---- Credentials Panel ---- */
+.creds-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+}
+.creds-heading { font-size: 1.15rem; margin-bottom: 0.25rem; }
+.creds-subtext { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1.5rem; }
+
+/* Credentials cards layout */
+.creds-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 1rem;
+}
+.creds-card {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    transition: border-color 0.3s;
+}
+.creds-card.highlight {
+    border-color: var(--warning);
+    box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.3);
+}
+.creds-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.85rem 1rem;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.15s;
+}
+.creds-card-header:hover { background: rgba(255, 255, 255, 0.03); }
+.creds-card-title {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+.creds-card-title h3 {
+    font-size: 0.95rem;
+    color: var(--accent);
+    margin: 0;
+}
+.creds-chevron {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    transition: transform 0.2s;
+}
+.creds-card.collapsed .creds-chevron {
+    transform: rotate(-90deg);
+}
+.creds-card-body {
+    padding: 0 1rem 1rem;
+    transition: max-height 0.25s ease, opacity 0.2s ease;
+    max-height: 600px;
+    opacity: 1;
+    overflow: hidden;
+}
+.creds-card.collapsed .creds-card-body {
+    max-height: 0;
+    opacity: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+}
+
+/* Status badges */
+.creds-badge {
+    font-size: 0.7rem;
+    padding: 0.15rem 0.5rem;
+    border-radius: 9999px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+.badge-ready {
+    background: rgba(34, 197, 94, 0.15);
+    color: var(--success);
+}
+.badge-notset {
+    background: rgba(245, 158, 11, 0.15);
+    color: var(--warning);
+}
+
+/* Field labels */
+.creds-label {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-bottom: 0.25rem;
+    margin-top: 0.5rem;
+    font-weight: 500;
+}
+.optional-hint {
+    font-weight: 400;
+    opacity: 0.6;
+}
+
+.creds-card input[type="text"],
+.creds-card input[type="url"],
+.creds-card input[type="email"],
+.creds-card input[type="password"] {
+    width: 100%;
+    padding: 0.6rem 0.75rem;
+    margin-bottom: 0.25rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-size: 0.85rem;
+}
+.creds-card input:focus { outline: none; border-color: var(--accent); }
+
+/* Password visibility toggle */
+.password-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+.password-wrapper input {
+    padding-right: 2.5rem !important;
+}
+.pwd-toggle {
+    position: absolute;
+    right: 0.5rem;
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 0.9rem;
+    padding: 0.25rem;
+    opacity: 0.6;
+    transition: opacity 0.2s;
+}
+.pwd-toggle:hover { opacity: 1; }
+.pwd-toggle-active { opacity: 1; color: var(--accent); }
+
+.creds-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    cursor: pointer;
+    margin-top: 0.5rem;
+}
+.creds-checkbox input[type="checkbox"] { accent-color: var(--accent); }
+
+/* Credentials action buttons */
+.creds-actions {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 1rem;
+}
+.creds-clear-btn {
+    background: transparent !important;
+    border-color: var(--danger) !important;
+    color: var(--danger) !important;
+}
+.creds-clear-btn:hover {
+    background: rgba(239, 68, 68, 0.1) !important;
+}
+
+/* ---- Toast notifications ---- */
+.toast-container {
+    position: fixed;
+    top: 5rem;
+    right: 1.5rem;
+    z-index: 200;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+.toast {
+    padding: 0.75rem 1.25rem;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: #fff;
+    opacity: 0;
+    transform: translateX(100%);
+    transition: opacity 0.3s, transform 0.3s;
+    max-width: 320px;
+}
+.toast-visible {
+    opacity: 1;
+    transform: translateX(0);
+}
+.toast-success { background: var(--success); }
+.toast-warning { background: var(--warning); color: #1e293b; }
+.toast-error { background: var(--danger); }
+
+/* ---- Mobile responsive ---- */
+@media (max-width: 768px) {
+    .topbar {
+        padding: 0.75rem 1rem;
+    }
+    .topbar h1 {
+        font-size: 1rem;
+    }
+    .container {
+        padding: 1rem;
+    }
+    .metrics-grid {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 0.75rem;
+    }
+    .metric-card {
+        padding: 1rem;
+    }
+    .metric-card .value {
+        font-size: 1.35rem;
+    }
+    .creds-cards {
+        grid-template-columns: 1fr;
+    }
+    .export-bar {
+        flex-wrap: wrap;
+    }
+    .source-bar {
+        gap: 0.5rem;
+    }
+    .source-btn {
+        padding: 0.5rem 0.9rem;
+        font-size: 0.8rem;
+    }
+    .empty-state {
+        padding: 2rem 1rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .topbar {
+        padding: 0.5rem 0.75rem;
+    }
+    .container {
+        padding: 0.75rem;
+    }
+    .metrics-grid {
+        grid-template-columns: 1fr;
+    }
+    .creds-panel {
+        padding: 1rem;
+    }
+    .creds-actions {
+        flex-direction: column;
+    }
+    .filter-input {
+        width: 100%;
+    }
+}

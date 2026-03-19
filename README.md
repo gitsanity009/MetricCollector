@@ -17,30 +17,37 @@ Admin dashboard for pulling metrics from enterprise applications and exporting t
 # 1. Clone and install
 pip install -r requirements.txt
 
-# 2. Configure credentials
+# 2. (Optional) Pre-fill default credentials
 cp .env.example .env
+<<<<<<< HEAD
+# Edit .env with your AD, vCenter, Jira, and Confluence credentials
+=======
 # Edit .env with connection details and app login credentials
 # Service credentials in `.env` are optional fallback values; admins can enter one domain credential set in the UI for AD, vCenter, Jira, and Confluence collection
+>>>>>>> main
 
 # 3. Run
 python run.py
 ```
 
+<<<<<<< HEAD
+Open `http://localhost:8000` in your browser. No login is required — the dashboard loads directly and prompts you to enter your service credentials (vCenter, Jira, Confluence, Active Directory) on first visit.
+=======
 Open `http://localhost:8000` in your browser. Log in with the app admin account from `.env` (default: `admin` / `changeme123`).
 
 When collecting metrics, enter domain credentials once in the dashboard. The same credentials are used for **Active Directory**, **vCenter**, **Jira**, and **Confluence** requests instead of requiring service credentials in `.env`.
+>>>>>>> main
 
 ## API Endpoints
 
-All `/api/metrics/*` endpoints require a Bearer token obtained from login.
+All `/api/metrics/*` endpoints accept service credentials in the POST request body. No authentication token is required.
 
 | Method | Path | Description |
 |--------|------|-------------|
-| POST | `/api/auth/login` | Get JWT token (OAuth2 password flow) |
 | GET | `/api/metrics/sources` | List available metric sources |
-| GET | `/api/metrics/{source}` | Fetch metrics as JSON |
-| GET | `/api/metrics/{source}/csv` | Export flat CSV |
-| GET | `/api/metrics/{source}/tableau` | Export Tableau-optimized CSV (detail rows) |
+| POST | `/api/metrics/{source}` | Fetch metrics as JSON |
+| POST | `/api/metrics/{source}/csv` | Export flat CSV |
+| POST | `/api/metrics/{source}/tableau` | Export Tableau-optimized CSV (detail rows) |
 
 Query parameters: `?project=KEY` (Jira), `?space=KEY` (Confluence)
 
@@ -56,14 +63,12 @@ Query parameters: `?project=KEY` (Jira), `?space=KEY` (Confluence)
 app/
   main.py              # FastAPI app, routes, static files
   config.py            # Pydantic settings (.env loader)
-  auth.py              # JWT authentication
   collectors/
     ad_collector.py    # Active Directory via LDAP
     vcenter_collector.py  # vCenter via pyVmomi
     jira_collector.py  # Jira via jira-python
     confluence_collector.py  # Confluence via atlassian-python-api
   routes/
-    auth_routes.py     # Login endpoint
     metrics_routes.py  # Metrics + export endpoints
   templates/           # Jinja2 HTML templates
   static/css/          # Dashboard styles

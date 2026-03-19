@@ -7,8 +7,19 @@ from typing import Any
 
 from jira import JIRA
 
-from app.config import settings
 
+<<<<<<< HEAD
+def _connect(url: str, user: str, password: str) -> JIRA:
+    return JIRA(
+        server=url,
+        basic_auth=(user, password),
+    )
+
+
+def collect(url: str, user: str, password: str, project_key: str | None = None) -> dict[str, Any]:
+    """Return Jira metrics for all projects or a specific project."""
+    client = _connect(url, user, password)
+=======
 
 def _connect(username: str | None = None, password: str | None = None) -> JIRA:
     return JIRA(
@@ -19,6 +30,7 @@ def _connect(username: str | None = None, password: str | None = None) -> JIRA:
 
 def collect(project_key: str | None = None, username: str | None = None, password: str | None = None) -> dict[str, Any]:
     """Return Jira metrics for all projects or a specific project."""
+>>>>>>> main
     metrics: dict[str, Any] = {"source": "jira", "collected_at": datetime.now(timezone.utc).isoformat()}
 
     try:
