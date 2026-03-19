@@ -17,28 +17,26 @@ Admin dashboard for pulling metrics from enterprise applications and exporting t
 # 1. Clone and install
 pip install -r requirements.txt
 
-# 2. Configure credentials
+# 2. (Optional) Pre-fill default credentials
 cp .env.example .env
 # Edit .env with your AD, vCenter, Jira, and Confluence credentials
-# Optional: set AD_BATTS_GROUP_CN and AD_UNIXUSERS_GROUP_CN for group-based user counts
 
 # 3. Run
 python run.py
 ```
 
-Open `http://localhost:8000` in your browser. Log in with the credentials set in `.env` (default: `admin` / `changeme123`).
+Open `http://localhost:8000` in your browser. No login is required — the dashboard loads directly and prompts you to enter your service credentials (vCenter, Jira, Confluence, Active Directory) on first visit.
 
 ## API Endpoints
 
-All `/api/metrics/*` endpoints require a Bearer token obtained from login.
+All `/api/metrics/*` endpoints accept service credentials in the POST request body. No authentication token is required.
 
 | Method | Path | Description |
 |--------|------|-------------|
-| POST | `/api/auth/login` | Get JWT token (OAuth2 password flow) |
 | GET | `/api/metrics/sources` | List available metric sources |
-| GET | `/api/metrics/{source}` | Fetch metrics as JSON |
-| GET | `/api/metrics/{source}/csv` | Export flat CSV |
-| GET | `/api/metrics/{source}/tableau` | Export Tableau-optimized CSV (detail rows) |
+| POST | `/api/metrics/{source}` | Fetch metrics as JSON |
+| POST | `/api/metrics/{source}/csv` | Export flat CSV |
+| POST | `/api/metrics/{source}/tableau` | Export Tableau-optimized CSV (detail rows) |
 
 Query parameters: `?project=KEY` (Jira), `?space=KEY` (Confluence)
 
@@ -54,14 +52,12 @@ Query parameters: `?project=KEY` (Jira), `?space=KEY` (Confluence)
 app/
   main.py              # FastAPI app, routes, static files
   config.py            # Pydantic settings (.env loader)
-  auth.py              # JWT authentication
   collectors/
     ad_collector.py    # Active Directory via LDAP
     vcenter_collector.py  # vCenter via pyVmomi
     jira_collector.py  # Jira via jira-python
     confluence_collector.py  # Confluence via atlassian-python-api
   routes/
-    auth_routes.py     # Login endpoint
     metrics_routes.py  # Metrics + export endpoints
   templates/           # Jinja2 HTML templates
   static/css/          # Dashboard styles
