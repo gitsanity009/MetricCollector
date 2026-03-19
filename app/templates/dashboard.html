@@ -349,7 +349,16 @@ function hasCredsForSource(sourceId) {
     var creds = getCredentials();
     var fields = serviceRequiredFields[service];
     if (!fields) return true;
-    return fields.every(function(f) { return creds[f] && creds[f].toString().trim() !== ''; });
+
+    var filledCount = fields.filter(function(f) {
+        return creds[f] && creds[f].toString().trim() !== '';
+    }).length;
+
+    // Allow the request when the browser has no local values for this service.
+    // The backend can still fall back to credentials configured in server settings.
+    if (filledCount === 0) return true;
+
+    return filledCount === fields.length;
 }
 
 // ---- Init: load sources ----
@@ -382,7 +391,7 @@ function selectSource(id) {
     if (!hasCredsForSource(id)) {
         var service = sourceServiceMap[id];
         toggleCredentials(service);
-        showToast('Please enter credentials for ' + id, 'warning');
+        showToast('Please complete all browser-stored credentials for ' + id + ' or clear them to use server defaults.', 'warning');
         return;
     }
 
