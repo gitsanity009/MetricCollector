@@ -16,15 +16,21 @@ class Settings(BaseSettings):
     vcenter_password: str = ""
     vcenter_disable_ssl: bool = True
 
-    # Jira (can be overridden via UI)
+    # Jira Cloud (can be overridden via UI).
+    # ``jira_user`` must be the Atlassian account email and ``jira_api_token``
+    # must be an API token from
+    # https://id.atlassian.com/manage-profile/security/api-tokens.
     jira_url: str = ""
     jira_user: str = ""
-    jira_password: str = ""
+    jira_api_token: str = ""
 
-    # Confluence (can be overridden via UI)
+    # Confluence Cloud (can be overridden via UI).
+    # ``confluence_user`` must be the Atlassian account email and
+    # ``confluence_api_token`` must be an API token from
+    # https://id.atlassian.com/manage-profile/security/api-tokens.
     confluence_url: str = ""
     confluence_user: str = ""
-    confluence_password: str = ""
+    confluence_api_token: str = ""
 
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
 
