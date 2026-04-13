@@ -305,6 +305,25 @@ body {
     opacity: 0.6;
 }
 
+/* Per-service help text inside credential cards */
+.creds-help {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    background: rgba(245, 158, 11, 0.08);
+    border: 1px solid rgba(245, 158, 11, 0.25);
+    border-radius: 6px;
+    padding: 0.5rem 0.65rem;
+    margin-bottom: 0.5rem;
+    line-height: 1.45;
+}
+.creds-help a {
+    color: var(--accent);
+    text-decoration: none;
+}
+.creds-help a:hover {
+    text-decoration: underline;
+}
+
 .creds-card input[type="text"],
 .creds-card input[type="url"],
 .creds-card input[type="email"],

@@ -91,14 +91,15 @@
                     <span class="creds-chevron" id="chevron-jira">&#9660;</span>
                 </div>
                 <div class="creds-card-body" id="body-jira">
+                    <p class="creds-help">Jira Cloud requires an Atlassian API token, not your account password. Create one at <a href="https://id.atlassian.com/manage-profile/security/api-tokens" target="_blank" rel="noopener">id.atlassian.com/manage-profile/security/api-tokens</a>.</p>
                     <label class="creds-label" for="jira_url">Jira URL</label>
                     <input type="url" id="jira_url" placeholder="https://org.atlassian.net" autocomplete="off">
                     <label class="creds-label" for="jira_user">Email</label>
                     <input type="email" id="jira_user" placeholder="user@example.com" autocomplete="off">
-                    <label class="creds-label" for="jira_password">Password</label>
+                    <label class="creds-label" for="jira_api_token">API Token</label>
                     <div class="password-wrapper">
-                        <input type="password" id="jira_password" placeholder="Enter password" autocomplete="off">
-                        <button type="button" class="pwd-toggle" onclick="togglePwdVisibility('jira_password', this)" aria-label="Toggle password visibility">&#128065;</button>
+                        <input type="password" id="jira_api_token" placeholder="Paste Atlassian API token" autocomplete="off">
+                        <button type="button" class="pwd-toggle" onclick="togglePwdVisibility('jira_api_token', this)" aria-label="Toggle API token visibility">&#128065;</button>
                     </div>
                 </div>
             </div>
@@ -113,14 +114,15 @@
                     <span class="creds-chevron" id="chevron-confluence">&#9660;</span>
                 </div>
                 <div class="creds-card-body" id="body-confluence">
+                    <p class="creds-help">Confluence Cloud requires an Atlassian API token, not your account password. Create one at <a href="https://id.atlassian.com/manage-profile/security/api-tokens" target="_blank" rel="noopener">id.atlassian.com/manage-profile/security/api-tokens</a>.</p>
                     <label class="creds-label" for="confluence_url">Confluence URL</label>
                     <input type="url" id="confluence_url" placeholder="https://org.atlassian.net/wiki" autocomplete="off">
                     <label class="creds-label" for="confluence_user">Email</label>
                     <input type="email" id="confluence_user" placeholder="user@example.com" autocomplete="off">
-                    <label class="creds-label" for="confluence_password">Password</label>
+                    <label class="creds-label" for="confluence_api_token">API Token</label>
                     <div class="password-wrapper">
-                        <input type="password" id="confluence_password" placeholder="Enter password" autocomplete="off">
-                        <button type="button" class="pwd-toggle" onclick="togglePwdVisibility('confluence_password', this)" aria-label="Toggle password visibility">&#128065;</button>
+                        <input type="password" id="confluence_api_token" placeholder="Paste Atlassian API token" autocomplete="off">
+                        <button type="button" class="pwd-toggle" onclick="togglePwdVisibility('confluence_api_token', this)" aria-label="Toggle API token visibility">&#128065;</button>
                     </div>
                 </div>
             </div>
@@ -135,19 +137,11 @@
     <!-- Source selector -->
     <div class="source-bar" id="source-bar"></div>
 
-<<<<<<< HEAD
     <!-- Empty state -->
     <div id="empty-state" class="empty-state">
         <div class="empty-state-icon">&#128202;</div>
         <h2>Welcome to MetricCollector</h2>
         <p>Select a source above to start collecting metrics. Make sure you have entered your credentials first.</p>
-=======
-    <!-- Shared credentials for AD/vCenter/Atlassian -->
-    <div id="shared-credential-bar" style="margin-bottom:1rem;display:none;gap:0.5rem;align-items:center;">
-        <input class="filter-input" id="domain-username" placeholder="Domain username (used for AD, vCenter, Jira, Confluence)">
-        <input class="filter-input" id="domain-password" type="password" placeholder="Domain password">
-        <button class="source-btn" onclick="fetchMetrics()">Use Credentials</button>
->>>>>>> main
     </div>
 
     <!-- Optional filters -->
@@ -194,7 +188,6 @@ function escapeHtml(str) {
         .replace(/'/g, '&#39;');
 }
 
-<<<<<<< HEAD
 // ---- Toast notifications ----
 function showToast(message, type) {
     type = type || 'success';
@@ -210,17 +203,6 @@ function showToast(message, type) {
         toast.classList.remove('toast-visible');
         setTimeout(function() { toast.remove(); }, 300);
     }, 3000);
-=======
-function authHeaders() {
-    const headers = { 'Authorization': 'Bearer ' + token };
-    if (currentSource) {
-        const domainUser = document.getElementById('domain-username').value.trim();
-        const domainPass = document.getElementById('domain-password').value;
-        if (domainUser) headers['X-Domain-Username'] = domainUser;
-        if (domainPass) headers['X-Domain-Password'] = domainPass;
-    }
-    return headers;
->>>>>>> main
 }
 
 // ---- Collapsible cards ----
@@ -251,8 +233,8 @@ function togglePwdVisibility(inputId, btn) {
 var serviceRequiredFields = {
     ad: ['ad_server', 'ad_user', 'ad_password', 'ad_base_dn'],
     vcenter: ['vcenter_host', 'vcenter_user', 'vcenter_password'],
-    jira: ['jira_url', 'jira_user', 'jira_password'],
-    confluence: ['confluence_url', 'confluence_user', 'confluence_password']
+    jira: ['jira_url', 'jira_user', 'jira_api_token'],
+    confluence: ['confluence_url', 'confluence_user', 'confluence_api_token']
 };
 
 function updateBadges() {
@@ -295,10 +277,10 @@ function saveCredentials() {
         vcenter_disable_ssl: document.getElementById('vcenter_disable_ssl').checked,
         jira_url: document.getElementById('jira_url').value,
         jira_user: document.getElementById('jira_user').value,
-        jira_password: document.getElementById('jira_password').value,
+        jira_api_token: document.getElementById('jira_api_token').value,
         confluence_url: document.getElementById('confluence_url').value,
         confluence_user: document.getElementById('confluence_user').value,
-        confluence_password: document.getElementById('confluence_password').value,
+        confluence_api_token: document.getElementById('confluence_api_token').value,
     };
     sessionStorage.setItem('credentials', JSON.stringify(creds));
     document.getElementById('creds-panel').style.display = 'none';
@@ -415,7 +397,6 @@ function selectSource(id) {
         return;
     }
 
-<<<<<<< HEAD
     currentSource = id;
     document.querySelectorAll('.source-btn').forEach(function(b) { b.classList.toggle('active', b.dataset.id === id); });
 
@@ -424,14 +405,6 @@ function selectSource(id) {
 
     var filterBar = document.getElementById('filter-bar');
     var filterInput = document.getElementById('filter-input');
-=======
-    const filterBar = document.getElementById('filter-bar');
-    const filterInput = document.getElementById('filter-input');
-    const credentialBar = document.getElementById('shared-credential-bar');
-
-    credentialBar.style.display = 'flex';
-
->>>>>>> main
     if (id === 'jira') {
         filterBar.style.display = 'flex';
         filterInput.placeholder = 'Jira project key (optional)';
