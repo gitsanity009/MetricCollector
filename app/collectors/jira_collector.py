@@ -8,33 +8,26 @@ from typing import Any
 from jira import JIRA
 
 
-<<<<<<< HEAD
-def _connect(url: str, user: str, password: str) -> JIRA:
+def _connect(url: str, user: str, api_token: str) -> JIRA:
+    """Connect to Jira.
+
+    For Jira Cloud, ``user`` must be the Atlassian account email and
+    ``api_token`` must be an API token generated at
+    https://id.atlassian.com/manage-profile/security/api-tokens. A regular
+    Atlassian account password will fail with HTTP 401 on Cloud instances.
+    """
     return JIRA(
         server=url,
-        basic_auth=(user, password),
+        basic_auth=(user, api_token),
     )
 
 
-def collect(url: str, user: str, password: str, project_key: str | None = None) -> dict[str, Any]:
+def collect(url: str, user: str, api_token: str, project_key: str | None = None) -> dict[str, Any]:
     """Return Jira metrics for all projects or a specific project."""
-    client = _connect(url, user, password)
-=======
-
-def _connect(username: str | None = None, password: str | None = None) -> JIRA:
-    return JIRA(
-        server=settings.jira_url,
-        basic_auth=(username or settings.jira_user, password or settings.jira_api_token),
-    )
-
-
-def collect(project_key: str | None = None, username: str | None = None, password: str | None = None) -> dict[str, Any]:
-    """Return Jira metrics for all projects or a specific project."""
->>>>>>> main
     metrics: dict[str, Any] = {"source": "jira", "collected_at": datetime.now(timezone.utc).isoformat()}
 
     try:
-        client = _connect(username=username, password=password)
+        client = _connect(url, user, api_token)
     except Exception as exc:
         metrics["error"] = f"Jira authentication failed: {exc}"
         return metrics

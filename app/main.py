@@ -15,16 +15,8 @@ app.include_router(metrics_router)
 @app.get("/")
 async def dashboard(request: Request):
     return templates.TemplateResponse("dashboard.html", {"request": request})
-<<<<<<< HEAD
-=======
-
-
-@app.get("/login")
-async def login_page(request: Request):
-    return templates.TemplateResponse("login.html", {"request": request})
 
 
 @app.get("/health")
 async def healthcheck():
     return {"status": "ok"}
->>>>>>> main

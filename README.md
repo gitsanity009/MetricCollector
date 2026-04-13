@@ -19,24 +19,24 @@ pip install -r requirements.txt
 
 # 2. (Optional) Pre-fill default credentials
 cp .env.example .env
-<<<<<<< HEAD
 # Edit .env with your AD, vCenter, Jira, and Confluence credentials
-=======
-# Edit .env with connection details and app login credentials
-# Service credentials in `.env` are optional fallback values; admins can enter one domain credential set in the UI for AD, vCenter, Jira, and Confluence collection
->>>>>>> main
 
 # 3. Run
 python run.py
 ```
 
-<<<<<<< HEAD
 Open `http://localhost:8000` in your browser. No login is required — the dashboard loads directly and prompts you to enter your service credentials (vCenter, Jira, Confluence, Active Directory) on first visit.
-=======
-Open `http://localhost:8000` in your browser. Log in with the app admin account from `.env` (default: `admin` / `changeme123`).
 
-When collecting metrics, enter domain credentials once in the dashboard. The same credentials are used for **Active Directory**, **vCenter**, **Jira**, and **Confluence** requests instead of requiring service credentials in `.env`.
->>>>>>> main
+### Jira & Confluence Cloud authentication
+
+Atlassian Cloud basic auth requires `email` + **API token**, not your account
+password. Generate a token at
+<https://id.atlassian.com/manage-profile/security/api-tokens> and paste it into
+the "API Token" field of the Jira and Confluence cards in the Credentials
+panel. Using a regular Atlassian password will fail with HTTP 401, especially
+on tenants that enforce 2FA or SAML SSO. See
+<https://developer.atlassian.com/cloud/jira/platform/basic-auth-for-rest-apis/>
+for details.
 
 ## API Endpoints
 
