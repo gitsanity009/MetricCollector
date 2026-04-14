@@ -45,36 +45,67 @@ class Credentials(BaseModel):
     confluence_api_token: str = ""
 
 
+def _require_credentials(source: str, creds: Credentials) -> str | None:
+    """Return an error message when required credentials are missing."""
+    requirements = {
+        "ad": [
+            ("ad_server", creds.ad_server),
+            ("ad_user", creds.ad_user),
+            ("ad_password", creds.ad_password),
+            ("ad_base_dn", creds.ad_base_dn),
+        ],
+        "vcenter": [
+            ("vcenter_host", creds.vcenter_host),
+            ("vcenter_user", creds.vcenter_user),
+            ("vcenter_password", creds.vcenter_password),
+        ],
+        "jira": [
+            ("jira_url", creds.jira_url),
+            ("jira_user", creds.jira_user),
+            ("jira_api_token", creds.jira_api_token),
+        ],
+        "confluence": [
+            ("confluence_url", creds.confluence_url),
+            ("confluence_user", creds.confluence_user),
+            ("confluence_api_token", creds.confluence_api_token),
+        ],
+    }
+    missing = [name for name, value in requirements.get(source, []) if not value]
+    if missing:
+        return f"Missing required credentials: {', '.join(missing)}"
+    return None
+
+
 def _collect(source: str, creds: Credentials, project: str | None = None, space: str | None = None) -> dict[str, Any]:
-    """Dispatch to the correct collector with user-supplied credentials."""
+    """Dispatch to the correct collector with request-supplied credentials only."""
     if source == "ad":
         return ad_collector.collect(
-            server_url=creds.ad_server or settings.ad_server,
-            user=creds.ad_user or settings.ad_user,
-            password=creds.ad_password or settings.ad_password,
-            base_dn=creds.ad_base_dn or settings.ad_base_dn,
+            server_url=creds.ad_server,
+            user=creds.ad_user,
+            password=creds.ad_password,
+            base_dn=creds.ad_base_dn,
             batts_group_cn=creds.ad_batts_group_cn or settings.ad_batts_group_cn,
             unixusers_group_cn=creds.ad_unixusers_group_cn or settings.ad_unixusers_group_cn,
         )
     elif source == "vcenter":
         return vcenter_collector.collect(
-            host=creds.vcenter_host or settings.vcenter_host,
-            user=creds.vcenter_user or settings.vcenter_user,
-            password=creds.vcenter_password or settings.vcenter_password,
+            host=creds.vcenter_host,
+            user=creds.vcenter_user,
+            password=creds.vcenter_password,
             disable_ssl=creds.vcenter_disable_ssl,
         )
     elif source == "jira":
         return jira_collector.collect(
-            url=creds.jira_url or settings.jira_url,
-            user=creds.jira_user or settings.jira_user,
-            api_token=creds.jira_api_token or settings.jira_api_token,
+            url=creds.jira_url,
+            user=creds.jira_user,
+            api_token=creds.jira_api_token,
             project_key=project,
         )
     elif source == "confluence":
         return confluence_collector.collect(
-            url=creds.confluence_url or settings.confluence_url,
-            user=creds.confluence_user or settings.confluence_user,
-            api_token=creds.confluence_api_token or settings.confluence_api_token,
+            url=creds.confluence_url,
+            user=creds.confluence_user,
+            api_token=creds.confluence_api_token,
             space_key=space,
         )
     return {}
@@ -112,6 +143,9 @@ async def get_metrics(
 ):
     if source not in SOURCES:
         return Response(status_code=404, content=f"Unknown source: {source}")
+    missing_creds_error = _require_credentials(source, creds)
+    if missing_creds_error:
+        return Response(status_code=400, content=missing_creds_error)
     data = _collect(source, creds, project=project, space=space)
     return data
 
@@ -127,6 +161,9 @@ async def export_csv(
 ):
     if source not in SOURCES:
         return Response(status_code=404, content=f"Unknown source: {source}")
+    missing_creds_error = _require_credentials(source, creds)
+    if missing_creds_error:
+        return Response(status_code=400, content=missing_creds_error)
 
     data = _collect(source, creds, project=project, space=space)
     flat = _flatten(data)
@@ -155,6 +192,9 @@ async def export_tableau(
     """Export detail-level rows as CSV, ideal for Tableau import."""
     if source not in SOURCES:
         return Response(status_code=404, content=f"Unknown source: {source}")
+    missing_creds_error = _require_credentials(source, creds)
+    if missing_creds_error:
+        return Response(status_code=400, content=missing_creds_error)
 
     data = _collect(source, creds, project=project, space=space)
 
