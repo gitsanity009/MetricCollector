@@ -1,3 +1,4 @@
+from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings
 
 
@@ -22,7 +23,7 @@ class Settings(BaseSettings):
     # https://id.atlassian.com/manage-profile/security/api-tokens.
     jira_url: str = ""
     jira_user: str = ""
-    jira_api_token: str = ""
+    jira_api_token: str = Field(default="", validation_alias=AliasChoices("JIRA_API_TOKEN", "JIRA_PASSWORD"))
 
     # Confluence Cloud (can be overridden via UI).
     # ``confluence_user`` must be the Atlassian account email and
